@@ -1,0 +1,22 @@
+import { join } from 'node:path';
+import type { Knex } from 'knex';
+import { config } from '../config.ts'
+
+const knexConfig: Knex.Config = {
+  client: 'pg',
+  connection: config.DATABASE_URL,
+  pool: { min: 0, max: 10 },
+  migrations: {
+    directory: join(import.meta.dirname, 'migrations'),
+    extension: 'ts',
+    loadExtensions: ['.ts'],
+    tableName: 'knex_migrations',
+  },
+  seeds: {
+    directory: join(import.meta.dirname, 'seeds'),
+    extension: 'ts',
+    loadExtensions: ['.ts']
+  }
+}
+
+export default knexConfig

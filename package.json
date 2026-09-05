@@ -8,5 +8,14 @@
   ],
   "engines": {
     "node": ">=20"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d db",
+    "db:down": "docker compose down",
+    "dev": "npm run dev --workspace apps/api",
+    "migrate": "npm run migrate --workspace apps/api",
+    "migrate:make": "npm run migrate:make --workspace apps/api --",
+    "typecheck": " npm run typecheck --workspace --if -present",
+    "test": "npm test --workspaces --if-present"
   }
 }
