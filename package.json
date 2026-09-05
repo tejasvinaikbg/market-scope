@@ -1,7 +1,7 @@
 {
   "name": "market-scope",
   "private": true,
-  "version": "1.0.0",
+  "version": "0.1.0",
   "workspaces": [
     "apps/*",
     "packages/*"
@@ -12,10 +12,15 @@
   "scripts": {
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
-    "dev": "npm run dev --workspace apps/api",
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev --w apps/api\" \"npm run dev -w apps/web\"",
+    "dev:api": "npm run dev -w app/api",
+    "dev:web": "npm run dev -w apps/web",
     "migrate": "npm run migrate --workspace apps/api",
     "migrate:make": "npm run migrate:make --workspace apps/api --",
     "typecheck": " npm run typecheck --workspace --if -present",
     "test": "npm test --workspaces --if-present"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.5"
   }
 }

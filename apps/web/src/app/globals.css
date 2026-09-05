@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+/* Semantic colours. Components use these names (bg-surface, text-fg, ...) and never raw grays,
+   so dark mode is a change of values here, not a `dark:` on every element. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --fg: #1a1d21;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --accent: #1d4ed8;
+  --ok: #15803d;
+  --bad: #b91c1c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f1115;
+    --surface: #171a21;
+    --fg: #e6e8eb;
+    --muted: #9aa3ad;
+    --line: #2a2f38;
+    --accent: #7aa2ff;
+    --ok: #4ade80;
+    --bad: #f87171;
+  }
+}
+
+/* Expose the variables to Tailwind as colour utilities: bg-bg, bg-surface, text-fg, text-muted, border-line, ... */
+/* Tailwind CSS v4 directive; supported by Tailwind's PostCSS parser. */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-fg: var(--fg);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-ok: var(--ok);
+  --color-bad: var(--bad);
+}
