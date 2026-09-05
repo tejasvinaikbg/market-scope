@@ -1,3 +1,6 @@
+/**
+ * All SQL for countries, states and cities as one dropdown tree.
+ */
 import { db, type Db } from '../db/knex.ts'
 
 export interface CityRef { id: number; name: string }

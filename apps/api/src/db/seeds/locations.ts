@@ -1,3 +1,6 @@
+/**
+ * Seed: India → three states → three cities for the dropdowns. Safe to re-run (onConflict ignore).
+ */
 import type { Knex } from 'knex';
 
 export async function seed(knex: Knex): Promise<void> {

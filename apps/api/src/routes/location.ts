@@ -1,3 +1,6 @@
+/**
+ * GET /api/locations — the seeded country → state → city tree for the dropdowns.
+ */
 import { Router } from 'express'
 import { z } from '../openapi/zod.ts'
 import { registry, errorResponses } from '../openapi/registry.ts'

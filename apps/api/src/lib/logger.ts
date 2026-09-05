@@ -1,3 +1,6 @@
+/**
+ * Process-wide pino logger: JSON lines by default, pretty-printed only when a human is watching a terminal.
+ */
 import pino from "pino";
 import { config } from "../config.ts";
 

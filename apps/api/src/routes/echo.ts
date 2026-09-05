@@ -1,3 +1,6 @@
+/**
+ * Scaffold routes that prove validation and the 500 path work; deleted in Phase 2 when real routes exist.
+ */
 import { Router } from 'express';
 import { z } from '../openapi/zod.ts';
 import { registry, errorResponses } from '../openapi/registry.ts';

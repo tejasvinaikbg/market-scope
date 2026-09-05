@@ -1,3 +1,6 @@
+/**
+ * The OpenAPI registry every route registers into, plus the shared error-envelope component and a helper for standard error responses.
+ */
 import { OpenAPIRegistry } from "@asteasolutions/zod-to-openapi";
 import { z } from "./zod.ts";
 

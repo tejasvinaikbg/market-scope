@@ -12,12 +12,14 @@
   "scripts": {
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
-    "dev": "concurrently -n api,web -c blue,green \"npm run dev --w apps/api\" \"npm run dev -w apps/web\"",
-    "dev:api": "npm run dev -w app/api",
+    "dev": "concurrently -n api,web -c blue,green \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
+    "dev:api": "npm run dev -w apps/api",
     "dev:web": "npm run dev -w apps/web",
     "migrate": "npm run migrate --workspace apps/api",
     "migrate:make": "npm run migrate:make --workspace apps/api --",
-    "typecheck": " npm run typecheck --workspace --if -present",
+    "seed:make": "npm run seed:make --workspace apps/api --",
+    "seed:run": "npm run seed:run --workspace apps/api",
+    "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm test --workspaces --if-present"
   },
   "devDependencies": {

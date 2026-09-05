@@ -1,3 +1,6 @@
+/**
+ * Migration: countries, states, cities. Cities carry columns to cache the geocoder's bounding box.
+ */
 import type { Knex } from "knex";
 
 

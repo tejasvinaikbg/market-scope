@@ -1,3 +1,6 @@
+/**
+ * Migration: enable PostGIS (spatial types and ST_* functions) and pgcrypto (gen_random_uuid).
+ */
 import type { Knex } from "knex";
 
 

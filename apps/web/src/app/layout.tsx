@@ -1,3 +1,6 @@
+/**
+ * Root layout (server component): HTML shell, theme tokens via globals.css, app-wide providers and the top bar.
+ */
 import type { ReactNode } from 'react';
 import { Providers } from './providers';
 import { TopBar } from '@/components/TopBar';

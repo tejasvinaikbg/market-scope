@@ -1,3 +1,6 @@
+/**
+ * GET /api/health — liveness plus a real database ping; 503 when the database is unreachable.
+ */
 import { Router } from 'express';
 import { z } from '../openapi/zod.ts';
 import { registry } from '../openapi/registry.ts';

@@ -8,7 +8,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "tsx --test \"src/**/*.test.ts\""
+    "test": "tsx --test \"test/**/*.test.ts\""
   },
   "devDependencies": {
     "@types/node": "^26.4.1",

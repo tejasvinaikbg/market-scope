@@ -1,6 +1,9 @@
+/**
+ * Unit tests for the boundary maths: area, validation, tiling with no gaps, the default square.
+ */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bboxAreaSqKm, validateBbox, splitBbox, squareAround, pointInBbox } from './geo.ts';
+import { bboxAreaSqKm, validateBbox, splitBbox, squareAround, pointInBbox } from '../src/geo.ts';
 
 // Koramangala–HSR, roughly 5 km × 4 km.
 const blr = { south: 12.92, west: 77.60, north: 12.956, east: 77.646 };

@@ -1,3 +1,6 @@
+/**
+ * Migration: store categories with their OSM tag selectors as JSONB (the category → OSM mapping is data).
+ */
 import type { Knex } from "knex";
 
 

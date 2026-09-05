@@ -1,7 +1,11 @@
+/**
+ * Contract tests for the HTTP layer: the middleware chain, the error envelope, validation and the OpenAPI document,
+ * through real requests against an app listening on a free port. No database needed.
+ */
 import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildApp } from './app.ts';
-import { db } from './db/knex.ts'
+import { buildApp } from '../../src/app.ts';
+import { db } from '../../src/db/knex.ts'
 
 // Listen on port 0: the OS picks a free port, so tests never collide with a running dev server.
 const server = buildApp().listen(0);
@@ -44,6 +48,6 @@ test('malformed JSON is 400 INVALID_JSON, a thrown Error is 500 INTERNAL_SERVER_
 
 test('OpenAPI document lists every route and the shared error component', async () => {
   const doc = await (await fetch(`${base()}/api/openapi.json`)).json();
-  assert.deepEqual(Object.keys(doc.paths).sort(), ['/api/categories', '/api/echo', '/api/health', '/api/locations']); assert.ok(doc.components.schemas.ErrorEnvelope);
+  assert.deepEqual(Object.keys(doc.paths).sort(), ['/api/categories', '/api/cities/{id}/bbox', '/api/echo', '/api/health', '/api/locations']); assert.ok(doc.components.schemas.ErrorEnvelope);
   assert.deepEqual(doc.components.schemas.EchoBody.required, ['name']);
 });

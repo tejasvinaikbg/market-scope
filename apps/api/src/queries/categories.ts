@@ -1,3 +1,6 @@
+/**
+ * All SQL for the categories table.
+ */
 import { db, type Db } from '../db/knex.ts'
 
 export interface CategoryRow {

@@ -1,3 +1,6 @@
+/**
+ * Assembles the OpenAPI document from everything the route modules registered at import time.
+ */
 import { OpenApiGeneratorV3 } from '@asteasolutions/zod-to-openapi';
 import { registry } from './registry.ts';
 import { config } from '../config.ts';

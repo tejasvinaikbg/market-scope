@@ -1,3 +1,6 @@
+/**
+ * The process entry point: the only file with side effects at startup (listen, and a clean shutdown on Ctrl+C / SIGTERM).
+ */
 import { buildApp } from "./app.ts";
 import { config } from "./config.ts";
 import { db } from './db/knex.ts'

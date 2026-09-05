@@ -1,3 +1,6 @@
+/**
+ * GET /api/categories — the seeded store categories, with their OpenAPI contract registered beside the handler.
+ */
 import { Router } from 'express';
 import { z } from '../openapi/zod.ts';
 import { registry, errorResponses } from '../openapi/registry.ts';

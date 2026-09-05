@@ -1,3 +1,6 @@
+/**
+ * Single Knex configuration: the knex CLI reads it for migrations and seeds; the app builds its instance from it.
+ */
 import { join } from 'node:path';
 import type { Knex } from 'knex';
 import { config } from '../config.ts'

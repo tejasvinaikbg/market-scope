@@ -1,3 +1,6 @@
+/**
+ * Seed: the five store categories and their OSM tag mappings. Safe to re-run (onConflict ignore).
+ */
 import type { Knex } from "knex";
 
 export async function seed(knex: Knex): Promise<void> {

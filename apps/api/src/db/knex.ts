@@ -1,3 +1,6 @@
+/**
+ * The one Knex instance for the process (built from the knexfile) and the transaction helper the queries use.
+ */
 import knexFactory, { type Knex } from 'knex';
 import pg from 'pg'
 import knexConfig from './knexfile.ts'
