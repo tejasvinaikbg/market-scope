@@ -1,39 +1,52 @@
 @import "tailwindcss";
 
-/* Semantic colours. Components use these names (bg-surface, text-fg, ...) and never raw grays,
-   so dark mode is a change of values here, not a `dark:` on every element. */
+/* next-themes sets class="dark" on <html>; make Tailwind's dark: variant follow that class, not the OS. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Palette read off the design: warm neutrals, one terracotta accent. Values are close reads of the canvas; adjust to the file. */
 :root {
-  --bg: #f6f7f9;
+  --bg: #f4f2ee;
   --surface: #ffffff;
-  --fg: #1a1d21;
-  --muted: #6b7280;
-  --line: #e5e7eb;
-  --accent: #1d4ed8;
-  --ok: #15803d;
-  --bad: #b91c1c;
+  --panel: #f8f6f3;
+  --fg: #1f1d1a;
+  --muted: #6f6a63;
+  --line: #e4e0da;
+  --accent: #b5654a;
+  --accent-fg: #ffffff;
+  --ok: #2e7d4f;
+  --bad: #b3402e;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0f1115;
-    --surface: #171a21;
-    --fg: #e6e8eb;
-    --muted: #9aa3ad;
-    --line: #2a2f38;
-    --accent: #7aa2ff;
-    --ok: #4ade80;
-    --bad: #f87171;
-  }
+.dark {
+  --bg: #1c1b19;
+  --surface: #24231f;
+  --panel: #2a2925;
+  --fg: #ebe7e0;
+  --muted: #9b958c;
+  --line: #3a3833;
+  --accent: #e2a48c;
+  --accent-fg: #1c1b19;
+  --ok: #6fcf97;
+  --bad: #f28b7d;
 }
 
-/* Expose the variables to Tailwind as colour utilities: bg-bg, bg-surface, text-fg, text-muted, border-line, ... */
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
+  --color-panel: var(--panel);
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-line: var(--line);
   --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
   --color-ok: var(--ok);
   --color-bad: var(--bad);
+}
+
+/* The design's uppercase, letter-spaced captions ("COUNTRY", "BOUNDARY AREA"). One class, used everywhere. */
+.caption {
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
 }

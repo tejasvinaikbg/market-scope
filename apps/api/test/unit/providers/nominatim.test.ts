@@ -1,3 +1,4 @@
+/** Nominatim geocoder tests with a fake fetch: retry on 429, no retry on 400, empty result is null (no network). */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createNominatimGeocoder } from '../../../src/providers/nominatim.ts';

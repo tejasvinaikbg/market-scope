@@ -1,0 +1,124 @@
+'use client';
+/**
+ * Step 02 — Market setup: location → categories → data sources → boundary area → CTA, with the city map beside it.
+ * This is the route file itself. It is a client component because it holds state, uses React Query hooks,
+ * and loads the Leaflet map with `ssr: false`, which Next only allows inside client components.
+ * This step reads the geocoded city box; the editable rectangle and "Create market" arrive with the markets API in Phase 3.
+ */
+import { useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
+import { Globe, Map, MapPin, ShoppingBag, Database, Maximize2, ArrowRight, Crosshair } from 'lucide-react';
+import { bboxAreaSqKm, bboxDimensionsKm, estimateDiscoveryCalls, MAX_MARKET_AREA_SQ_KM } from '@market-scope/shared';
+import { useLocations, useCategories, useCityBounds } from '@/api/hooks';
+import { Field } from '@/components/Field';
+
+const CityMap = dynamic(() => import('@/components/CityMap'), { ssr: false, loading: () => <div className="h-full bg-panel" /> });
+
+export default function Page() {
+  const locations = useLocations();
+  const categories = useCategories();
+  const [countryId, setCountryId] = useState<number | null>(null);
+  const [stateId, setStateId] = useState<number | null>(null);
+  const [cityId, setCityId] = useState<number | null>(null);
+  const [selected, setSelected] = useState<number[]>([]);
+  const [places, setPlaces] = useState<'overpass' | 'google'>('overpass');
+  const [geocoder, setGeocoder] = useState<'nominatim' | 'google'>('nominatim');
+
+  const country = locations.data?.countries.find((c) => c.id === countryId) ?? null;
+  const state = country?.states.find((s) => s.id === stateId) ?? null;
+  const bounds = useCityBounds(cityId);
+  const bbox = bounds.data?.bbox ?? null;
+
+  // Live numbers for the BOUNDARY AREA block, from the shared maths (same formula the server checks with PostGIS).
+  const area = useMemo(() => (bbox ? bboxAreaSqKm(bbox) : 0), [bbox]);
+  const dims = useMemo(() => (bbox ? bboxDimensionsKm(bbox) : null), [bbox]);
+  const calls = useMemo(() => (bbox ? estimateDiscoveryCalls(bbox) : 0), [bbox]);
+  const over = area > MAX_MARKET_AREA_SQ_KM;
+
+  const toggle = (id: number) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+
+  return (
+    <div className="grid grid-cols-1 md:min-h-[calc(100vh-8rem)] md:grid-cols-[360px_1fr]">
+      {/* Form first on a phone (the decisions), map beside it from 768 px */}
+      <section className="space-y-6 border-b border-line bg-surface p-4 md:overflow-y-auto md:border-b-0 md:border-r md:p-6">
+        <div>
+          <h1 className="flex items-center gap-2 text-2xl font-bold"><Crosshair size={22} /> Define the market</h1>
+          <p className="mt-1 text-muted">Boundary and categories decide how many places-API calls discovery costs.</p>
+        </div>
+
+        <Field icon={<Globe size={14} />} label="Country" value={countryId ?? ''} onChange={(e) => { setCountryId(Number(e.target.value) || null); setStateId(null); setCityId(null); }}>
+          <option value="">Select…</option>
+          {locations.data?.countries.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </Field>
+        <Field icon={<Map size={14} />} label="State" disabled={!country} value={stateId ?? ''} onChange={(e) => { setStateId(Number(e.target.value) || null); setCityId(null); }}>
+          <option value="">Select…</option>
+          {country?.states.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </Field>
+        <Field icon={<MapPin size={14} />} label="City" disabled={!state} value={cityId ?? ''} onChange={(e) => setCityId(Number(e.target.value) || null)}>
+          <option value="">Select…</option>
+          {state?.cities.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </Field>
+
+        {cityId && (
+          <div>
+            <div className="caption mb-2 flex items-center gap-1.5"><ShoppingBag size={14} /> Categories</div>
+            <div className="flex flex-wrap gap-2">
+              {categories.data?.map((c) => {
+                const on = selected.includes(c.id);
+                return (
+                  <button key={c.id} type="button" onClick={() => toggle(c.id)}
+                    className={`rounded border px-3 py-2 font-medium ${on ? 'border-accent bg-accent text-accent-fg' : 'border-line bg-surface text-fg hover:border-muted'}`}>
+                    {c.name}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {selected.length > 0 && (
+          <div className="space-y-3 border-t border-line pt-5">
+            <div className="caption flex items-center gap-1.5"><Database size={14} /> Data sources</div>
+            <Field label="Places / store discovery" value={places} onChange={(e) => setPlaces(e.target.value as typeof places)}>
+              <option value="overpass">OSM Overpass</option>
+              <option value="google">Google Places API (New)</option>
+            </Field>
+            <Field label="Geocoding / city boundary" value={geocoder} onChange={(e) => setGeocoder(e.target.value as typeof geocoder)}>
+              <option value="nominatim">OSM Nominatim</option>
+              <option value="google">Google Geocoding API</option>
+            </Field>
+            <p className="text-xs text-muted">
+              {places === 'overpass'
+                ? `Overpass is free and rate-limited: the boundary is split into ~3 km tiles, one query each, at ~1 request/s. Categories map to OSM tags (shop=supermarket, amenity=pharmacy, …).`
+                : `Nearby Search is billed per request — 20 results a page, up to 3 pages. Categories map to Places types (supermarket, pharmacy, grocery_or_supermarket, convenience_store).`}
+            </p>
+          </div>
+        )}
+
+        {bbox && (
+          <div className="space-y-2 border-t border-line pt-5">
+            <div className="caption flex items-center gap-1.5"><Maximize2 size={14} /> Boundary area</div>
+            <div className="flex items-baseline gap-2">
+              <span className={`text-4xl font-bold ${over ? 'text-bad' : ''}`}>{bbox ? Math.round(area).toLocaleString() : '—'}</span>
+              <span className="text-muted">km² / {MAX_MARKET_AREA_SQ_KM} km² cap</span>
+            </div>
+            <div className="h-1 w-full bg-line"><div className={`h-full ${over ? 'bg-bad' : 'bg-accent'}`} style={{ width: `${Math.min(100, (area / MAX_MARKET_AREA_SQ_KM) * 100)}%` }} /></div>
+            {dims && <p className="text-xs text-muted">{dims.widthKm.toFixed(1)} × {dims.heightKm.toFixed(1)} km · ≈ {calls} {places === 'overpass' ? 'Overpass queries' : 'Nearby Search calls'}</p>}
+            {over && <p className="font-medium text-bad">Over the {MAX_MARKET_AREA_SQ_KM} km² cap — shrink the rectangle to continue.</p>}
+          </div>
+        )}
+
+        {/* The CTA appears only once the form is complete — the fields above already say what is missing. It becomes "Create market" in Phase 3. */}
+        {cityId && selected.length > 0 && (
+          <button type="button" disabled className="flex w-full items-center justify-between rounded border border-line px-4 py-3 font-semibold text-muted disabled:opacity-60">
+            Upload a portfolio first <ArrowRight size={16} />
+          </button>
+        )}
+      </section>
+
+      <section className="flex h-[50vh] flex-col md:h-auto">
+        <CityMap city={bounds.data ?? null} geocoder={geocoder} />
+      </section>
+    </div>
+  );
+}

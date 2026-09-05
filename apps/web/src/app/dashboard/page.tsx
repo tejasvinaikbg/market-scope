@@ -1,0 +1,17 @@
+/** Step 03 placeholder: the design's empty-state banner, shown until a market exists (Phase 6 builds the dashboard). */
+import Link from 'next/link';
+import { Info, ArrowRight } from 'lucide-react';
+
+export default function Page() {
+  return (
+    <div className="m-4 flex flex-wrap items-center justify-between gap-4 border border-line bg-surface p-4 md:m-6">
+      <p className="flex items-start gap-3">
+        <Info size={16} className="mt-0.5 shrink-0 text-accent" />
+        <span><strong>No market created yet.</strong> Discovered stores and matches appear once the market is created.</span>
+      </p>
+      <Link href="/setup" className="flex items-center gap-2 rounded border border-line px-4 py-2 font-semibold">
+        Back to market setup <ArrowRight size={16} />
+      </Link>
+    </div>
+  );
+}
