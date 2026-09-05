@@ -4,15 +4,15 @@ services:
     container_name: market-scope-db
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-ms}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ms}
-      POSTGRES_DB: ${POSTGRES_DB:-ms}
+      POSTGRES_USER: ${POSTGRES_USER:?set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set in .env}
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:?set in .env}:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ms} -d ${POSTGRES_DB:-ms}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 30s
       retries: 10

@@ -27,7 +27,6 @@
 }
 
 /* Expose the variables to Tailwind as colour utilities: bg-bg, bg-surface, text-fg, text-muted, border-line, ... */
-/* Tailwind CSS v4 directive; supported by Tailwind's PostCSS parser. */
 @theme inline {
   --color-bg: var(--bg);
   --color-surface: var(--surface);
