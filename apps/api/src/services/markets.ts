@@ -1,10 +1,12 @@
 /**
  * Market creation: the validation ladder, then one transaction. Every rule the setup screen shows live (shape,
  * area cap) is enforced here again, with PostGIS as the measurement — the client's number is only a preview.
+ * Also what can be done to a market afterwards: run it again (recovery after gaps, or to bring an older market up to
+ * date with what the pipeline does now), and delete it. Neither while a run is in flight.
  */
 import { validateBbox, MAX_MARKET_AREA_SQ_KM, MIN_MARKET_AREA_SQ_KM, type Bbox } from '@market-scope/shared';
 import { withTransaction } from '../db/knex.ts';
-import { badRequest, notFound } from '../lib/errors.ts';
+import { badRequest, notFound, conflict } from '../lib/errors.ts';
 import { marketsQueries, type PlacesProvider, type GeocoderProvider } from '../queries/markets.ts';
 import { portfoliosQueries } from '../queries/portfolios.ts';
 import { citiesQueries } from '../queries/cities.ts';
@@ -60,6 +62,26 @@ export async function getMarket(id: number) {
   const market = await marketsQueries.byId(id);
   if (!market) throw notFound('market');
   return market;
+}
+
+const inFlight = (status: string) => status === 'pending' || status === 'running';
+
+/** Queue the pipeline again for a market whose run has ended. Same job, same idempotent steps; the rows are rewritten. */
+export async function rerunMarket(id: number) {
+  const market = await getMarket(id);
+  if (inFlight(market.status)) throw conflict('RUN_IN_PROGRESS', 'This market is already being worked on; wait for it to finish');
+  await withTransaction(async (trx) => {
+    await marketsQueries.reset(id, trx);
+    await jobsQueries.enqueue('market.pipeline', id, { marketId: id }, trx);
+  });
+  return (await marketsQueries.byId(id))!;
+}
+
+/** Delete a market and everything found for it. Not while a run is in flight: the worker would be writing into a hole. */
+export async function deleteMarket(id: number) {
+  const market = await getMarket(id);
+  if (inFlight(market.status)) throw conflict('RUN_IN_PROGRESS', 'This market is being worked on; wait for it to finish before deleting it');
+  await marketsQueries.remove(id);
 }
 
 /** Everything the dashboard draws for one market: the filtered list, the unlocated portfolio stores, and the unfiltered totals. */

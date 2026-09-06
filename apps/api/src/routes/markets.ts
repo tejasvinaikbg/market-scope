@@ -1,12 +1,12 @@
 /**
- * /api/markets — create a market from the setup screen's decisions, list markets, read one.
+ * /api/markets — create a market from the setup screen's decisions, list markets, read one, run one again, delete one.
  * The body is validated by zod (shape and types); the product rules live in the service.
  */
 import { Router } from 'express';
 import { z } from '../openapi/zod.ts';
 import { registry, errorResponses } from '../openapi/registry.ts';
 import { marketsQueries } from '../queries/markets.ts';
-import { createMarket, getMarket, listMarketStores } from '../services/markets.ts';
+import { createMarket, getMarket, listMarketStores, rerunMarket, deleteMarket } from '../services/markets.ts';
 
 const Bbox = z.object({ south: z.number(), west: z.number(), north: z.number(), east: z.number() }).openapi('Bbox');
 const Category = z.object({ id: z.number(), slug: z.string(), name: z.string() });
@@ -74,6 +74,18 @@ registry.registerPath({
   request: { params: idParam },
   responses: { 200: { description: 'OK', content: { 'application/json': { schema: Market } } }, ...errorResponses(400, 404, 500) },
 });
+registry.registerPath({
+  method: 'post', path: '/api/markets/{id}/runs', tags: ['markets'], summary: 'Run discovery again for a finished market',
+  description: 'Queues the same pipeline for the market: locate, place, discover, match. Every step rewrites its rows, so nothing duplicates. Refused with 409 while a run is in flight. Answers with the market, queued.',
+  request: { params: idParam },
+  responses: { 202: { description: 'Queued', content: { 'application/json': { schema: Market } } }, ...errorResponses(400, 404, 409, 500) },
+});
+registry.registerPath({
+  method: 'delete', path: '/api/markets/{id}', tags: ['markets'], summary: 'Delete a market and everything found for it',
+  description: 'Discovered stores, placements, matches and queued jobs go with it. Refused with 409 while a run is in flight.',
+  request: { params: idParam },
+  responses: { 204: { description: 'Deleted' }, ...errorResponses(400, 404, 409, 500) },
+});
 
 export function marketsRouter() {
   const router = Router();
@@ -81,5 +93,7 @@ export function marketsRouter() {
   router.get('/markets', async (_req, res) => { res.json(await marketsQueries.list()); });
   router.get('/markets/:id', async (req, res) => { res.json(await getMarket(idParam.parse(req.params).id)); });
   router.get('/markets/:id/stores', async (req, res) => { res.json(await listMarketStores(idParam.parse(req.params).id, StoreFiltersQuery.parse(req.query))); });
+  router.post('/markets/:id/runs', async (req, res) => { res.status(202).json(await rerunMarket(idParam.parse(req.params).id)); });
+  router.delete('/markets/:id', async (req, res) => { await deleteMarket(idParam.parse(req.params).id); res.status(204).end(); });
   return router;
 }

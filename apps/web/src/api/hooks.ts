@@ -1,6 +1,6 @@
 'use client';
 /** Data hooks, one per endpoint. Reference data never changes within a session (staleTime: Infinity). */
-import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import type { Bbox, LatLng, FileIssue } from '@market-scope/shared';
 import { api } from './client';
 import { useCurrentPortfolio, useCurrentMarket } from '@/app/providers';
@@ -101,6 +101,29 @@ export const useMarketStores = (id: number | null, filters: StoreFilters, status
     refetchIntervalInBackground: true,
     placeholderData: keepPreviousData,
   });
+
+/** Queues discovery again for a finished market. The answer is the market, queued; the dashboard's polling takes it from there. */
+export function useRerunMarket(id: number | null) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => api<Market>(`/markets/${id}/runs`, { method: 'POST' }),
+    onSuccess: (market) => client.setQueryData(['market', id], market),
+  });
+}
+
+/** Deletes a market and everything found for it. The session forgets it if it was the current one; the list is re-read. */
+export function useDeleteMarket(id: number | null) {
+  const client = useQueryClient();
+  const { market, setMarket } = useCurrentMarket();
+  return useMutation({
+    mutationFn: () => api<void>(`/markets/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      if (market?.id === id) setMarket(null);
+      client.removeQueries({ queryKey: ['market', id] });
+      void client.invalidateQueries({ queryKey: ['markets'] });
+    },
+  });
+}
 
 /** Creates the market from the setup screen's decisions. On success it becomes the session's current market. */
 export function useCreateMarket() {

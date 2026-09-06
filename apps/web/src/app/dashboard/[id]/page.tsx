@@ -4,17 +4,19 @@
  * status. Once there are stores: the four totals, the layers to show, a search box with category chips, and the list beside
  * the map. Map and list draw the same filtered rows from one request; the totals never follow the filters. The page polls
  * while the run is in flight, so stores appear as they are found, and stops when it ends. A store picked in the list or on
- * the map is marked in both, so the two views always point at the same store.
+ * the map is marked in both, so the two views always point at the same store. A finished market can be run again, and
+ * deleted; neither while a run is in flight.
  */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useDebounce } from 'use-debounce';
-import { Layers, Info, ArrowRight, ChevronLeft, Loader, Check, TriangleAlert, Search, MapPin, X } from 'lucide-react';
+import { Layers, Info, ArrowRight, ChevronLeft, Loader, Check, TriangleAlert, Search, MapPin, X, RotateCcw } from 'lucide-react';
 import { MATCH_DISTANCE_M } from '@market-scope/shared';
 import type { LatLng } from '@market-scope/shared';
-import { useMarket, useMarketStores, type Market, type LayerFilter } from '@/api/hooks';
+import { useMarket, useMarketStores, useRerunMarket, useDeleteMarket, type Market, type LayerFilter } from '@/api/hooks';
+import { isApiError } from '@/api/client';
 import { useCurrentMarket } from '@/app/providers';
 import { LAYERS, ALL_LAYERS, LayerSwatch, layerTag, unlocatedReason } from '@/components/layers';
 import { CategoryIcon } from '@/components/categoryIcons';
@@ -113,6 +115,11 @@ export default function Page() {
   const [selected, setSelected] = useState<{ id: string; from: 'list' | 'map' } | null>(null);
   const rowRefs = useRef(new Map<string, HTMLButtonElement>());
   useEffect(() => { if (selected?.from === 'map') rowRefs.current.get(selected.id)?.scrollIntoView({ block: 'nearest' }); }, [selected]);
+  // Run again and delete, neither while a run is in flight (the API refuses too). Delete asks twice.
+  const rerun = useRerunMarket(marketId);
+  const remove = useDeleteMarket(marketId);
+  const router = useRouter();
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const everyLayer = layers.length === ALL_LAYERS.length;
   // With every layer on, nothing is sent: the API's default is everything. With no layer on, nothing is asked at all.
   const stores = useMarketStores(layers.length ? marketId : null, { layers: everyLayer ? undefined : layers, categories, q }, market.data?.status);
@@ -124,6 +131,7 @@ export default function Page() {
   const m = market.data;
   const started = m.status !== 'pending';
   const ended = m.status === 'ready' || m.status === 'partial';
+  const inFlight = m.status === 'pending' || m.status === 'running';
   const rows = layers.length ? stores.data?.stores ?? [] : [];
   const unlocated = stores.data?.unlocated ?? [];
   const total = stores.data ? stores.data.counts.discovered + stores.data.counts.portfolioInside + stores.data.counts.portfolioOutside : 0;
@@ -150,6 +158,15 @@ export default function Page() {
           <div className="border border-line bg-panel p-4" role="status" aria-live="polite">
             <div className="caption mb-2 flex items-center gap-2"><Info size={14} /> Store discovery</div>
             <DiscoveryStatus m={m} />
+            {!inFlight && (
+              <div className="mt-3 flex flex-wrap items-center gap-3">
+                <button type="button" onClick={() => rerun.mutate()} disabled={rerun.isPending}
+                  className="flex items-center gap-1.5 rounded border border-line bg-surface px-3 py-1.5 text-xs font-medium hover:border-muted disabled:opacity-60">
+                  <RotateCcw size={12} /> {rerun.isPending ? 'Queueing…' : 'Run discovery again'}
+                </button>
+                {rerun.isError && <span role="alert" className="text-xs text-bad">{isApiError(rerun.error) ? rerun.error.message : "Couldn't reach the service."}</span>}
+              </div>
+            )}
             {ended && m.storeCount === 0 && (
               <p className="mt-2 text-sm text-muted">Nothing was found for {m.categories.map((c) => c.name).join(', ')} inside this boundary. Try a larger boundary or other categories.</p>
             )}
@@ -230,10 +247,24 @@ export default function Page() {
           </div>
         )}
 
-        {/* Two ways on: every market the service holds, or a new one. */}
-        <div className="mt-auto flex flex-wrap gap-2 p-4 md:p-6">
-          <Link href="/dashboard" className="inline-flex items-center gap-2 rounded border border-line px-4 py-2 font-semibold"><ChevronLeft size={16} /> All markets</Link>
-          <Link href="/setup" className="inline-flex items-center gap-2 rounded border border-line px-4 py-2 font-semibold">Create another market <ArrowRight size={16} /></Link>
+        {/* Two ways on: every market the service holds, or a new one. And the way out: delete, asked twice, never mid-run. */}
+        <div className="mt-auto space-y-3 p-4 md:p-6">
+          <div className="flex flex-wrap gap-2">
+            <Link href="/dashboard" className="inline-flex items-center gap-2 rounded border border-line px-4 py-2 font-semibold"><ChevronLeft size={16} /> All markets</Link>
+            <Link href="/setup" className="inline-flex items-center gap-2 rounded border border-line px-4 py-2 font-semibold">Create another market <ArrowRight size={16} /></Link>
+          </div>
+          {!inFlight && !confirmDelete && (
+            <button type="button" onClick={() => setConfirmDelete(true)} className="text-sm text-muted underline-offset-2 hover:underline">Delete this market</button>
+          )}
+          {confirmDelete && (
+            <div className="flex flex-wrap items-center gap-3 border border-bad bg-surface p-3 text-sm" role="alertdialog" aria-label="Delete this market?">
+              <span>Delete this market and everything found for it?</span>
+              <button type="button" onClick={() => remove.mutate(undefined, { onSuccess: () => router.push('/dashboard') })} disabled={remove.isPending}
+                className="rounded bg-bad px-3 py-1.5 font-semibold text-white disabled:opacity-60">{remove.isPending ? 'Deleting…' : 'Delete'}</button>
+              <button type="button" onClick={() => setConfirmDelete(false)} className="rounded border border-line px-3 py-1.5 font-medium">Keep it</button>
+              {remove.isError && <span role="alert" className="text-bad">{isApiError(remove.error) ? remove.error.message : "Couldn't reach the service."}</span>}
+            </div>
+          )}
         </div>
       </section>
 

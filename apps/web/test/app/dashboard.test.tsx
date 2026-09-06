@@ -4,13 +4,14 @@
  * off the map, and the footer. The map is a stand-in that prints the ids it was given, so the test can see that map and list
  * draw the same rows. Every filter is checked at the request the page sends.
  */
-import { screen, within } from '@testing-library/react';
+import { screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Page from '@/app/dashboard/[id]/page';
 import { Stepper } from '@/components/Stepper';
 import { renderApp, mockApi } from '../helpers';
 
-jest.mock('next/navigation', () => ({ usePathname: () => '/dashboard/7', useParams: () => ({ id: '7' }) }));
+const mockPush = jest.fn();
+jest.mock('next/navigation', () => ({ usePathname: () => '/dashboard/7', useParams: () => ({ id: '7' }), useRouter: () => ({ push: mockPush }) }));
 // Leaflet needs a real browser; the stand-in shows which stores reached the map. __esModule so the dynamic import sees a default export.
 jest.mock('@/components/MarketMap', () => ({
   __esModule: true,
@@ -219,4 +220,35 @@ test('a store that found its twin: the fifth total, the sentence, the tag with t
   expect(chips.getByRole('button', { name: 'Matched ≤150 m' })).toHaveAttribute('aria-pressed', 'true');
   expect(await screen.findByText('1 store shown · 4 in this market')).toBeInTheDocument();
   expect(screen.getByTestId('map')).toHaveTextContent('p:1');
+});
+
+test('a finished market can be run again: the button posts, and the market comes back queued', async () => {
+  const spy = mockApi({ 'GET /api/markets/7': { body: { ...base, ...ready } }, 'GET /api/markets/7/stores': { body: all }, 'POST /api/markets/7/runs': { status: 202, body: { ...base, ...ready, status: 'pending', progress: null } } });
+  renderApp(<Page />);
+  await userEvent.click(await screen.findByRole('button', { name: /Run discovery again/ }));
+  expect(await screen.findByRole('status')).toHaveTextContent('Discovery is queued');
+  expect(spy.mock.calls.some(([url, init]) => String(url).endsWith('/api/markets/7/runs') && init?.method === 'POST')).toBe(true);
+  expect(screen.queryByRole('button', { name: /Run discovery again/ })).not.toBeInTheDocument();   // not while it is queued
+});
+
+test('while a run is in flight there is no run-again and no delete', async () => {
+  withMarket({ status: 'running', storeCount: 1, progress: { tiles: 4, done: 1, failed: 0 } }, { '': none });
+  renderApp(<Page />);
+  await screen.findByRole('status');
+  expect(screen.queryByRole('button', { name: /Run discovery again/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Delete this market/ })).not.toBeInTheDocument();
+});
+
+test('delete asks twice, then removes the market and goes back to the list', async () => {
+  const spy = mockApi({ 'GET /api/markets/7': { body: { ...base, ...ready } }, 'GET /api/markets/7/stores': { body: all }, 'DELETE /api/markets/7': { status: 204, body: undefined } });
+  renderApp(<Page />);
+  await userEvent.click(await screen.findByRole('button', { name: 'Delete this market' }));
+  const dialog = screen.getByRole('alertdialog', { name: 'Delete this market?' });
+  await userEvent.click(within(dialog).getByRole('button', { name: 'Keep it' }));
+  expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+  expect(spy.mock.calls.some(([, init]) => init?.method === 'DELETE')).toBe(false);
+  await userEvent.click(screen.getByRole('button', { name: 'Delete this market' }));
+  await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Delete' }));
+  await waitFor(() => expect(mockPush).toHaveBeenCalledWith('/dashboard'));
+  expect(spy.mock.calls.some(([url, init]) => String(url).endsWith('/api/markets/7') && init?.method === 'DELETE')).toBe(true);
 });

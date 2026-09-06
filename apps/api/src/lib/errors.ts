@@ -29,3 +29,5 @@ export const isAppError = (err: unknown): err is AppError =>
 // The two shapes routes actually throw. Add more here as codes are introduced; never build error bodies in a route.
 export const notFound = (what: string) => createAppError(404, 'NOT_FOUND', `${what} not found`);
 export const badRequest = (code: string, message: string, details?: unknown) => createAppError(400, code, message, details);
+/** The request is well formed but the thing is in a state that forbids it right now (a run still in flight). */
+export const conflict = (code: string, message: string) => createAppError(409, code, message);

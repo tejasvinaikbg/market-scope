@@ -12,6 +12,7 @@ export interface ApiError extends Error { code: string; status: number; details?
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(apiUrl(path), init);
+  if (res.status === 204) return undefined as T;                     // "done, nothing to say": a delete
   if (res.ok) return res.json() as Promise<T>;
   const body = await res.json().catch(() => null);                       // a proxy error page is not JSON; keep the status text
   const err = new Error(body?.error?.message ?? res.statusText) as ApiError;

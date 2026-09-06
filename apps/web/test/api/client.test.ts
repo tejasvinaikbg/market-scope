@@ -31,3 +31,10 @@ test('isApiError rejects plain errors, so a network failure is told apart from a
   expect(isApiError(new TypeError('Failed to fetch'))).toBe(false);
   expect(isApiError(null)).toBe(false);
 });
+
+test('a 204 answers with nothing, and no body is read', async () => {
+  const json = jest.fn();
+  jest.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, status: 204, statusText: '204', json } as unknown as Response);
+  await expect(api('/markets/7', { method: 'DELETE' })).resolves.toBeUndefined();
+  expect(json).not.toHaveBeenCalled();
+});

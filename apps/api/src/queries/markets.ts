@@ -103,6 +103,16 @@ export const marketsQueries = {
     await k('markets').where({ id }).update({ progress: JSON.stringify(progress) });
   },
 
+  /** Back to the starting line for another run: queued, no error, no progress. Last run's rows stay until the run rewrites them. */
+  async reset(id: number, k: Db = db): Promise<void> {
+    await k('markets').where({ id }).update({ status: 'pending', error: null, progress: null, started_at: null, completed_at: null });
+  },
+
+  /** The market and everything that hangs off it: stores, placements, pairs and jobs go with it (ON DELETE CASCADE). */
+  async remove(id: number, k: Db = db): Promise<void> {
+    await k('markets').where({ id }).del();
+  },
+
   /** Status transitions stamp their own timestamps: running sets started_at, any terminal state sets completed_at. */
   async setStatus(id: number, status: MarketStatus, error: string | null = null, k: Db = db): Promise<void> {
     await k('markets').where({ id }).update({

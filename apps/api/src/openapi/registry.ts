@@ -14,8 +14,8 @@ export const ErrorEnvelope = registry.register("ErrorEnvelope", z.object({
     }),
 }));
 
-export const errorResponses = (...statuses: Array<400 | 404 | 500>) => Object.fromEntries(statuses.map((s) => [s, {
-    description: { 400: 'Invalid request', 404: 'Not found', 500: 'Internal server error' }[s],
+export const errorResponses = (...statuses: Array<400 | 404 | 409 | 500>) => Object.fromEntries(statuses.map((s) => [s, {
+    description: { 400: 'Invalid request', 404: 'Not found', 409: 'Not now: a run is in flight', 500: 'Internal server error' }[s],
     content: {
         "application/json": {
             schema: ErrorEnvelope
