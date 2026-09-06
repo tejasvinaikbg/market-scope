@@ -15,6 +15,12 @@
   --accent-fg: #ffffff;
   --ok: #2e7d4f;
   --bad: #b3402e;
+  /* Drawn on the map tiles, which are light in both themes: the light look, whatever the theme, so these are not
+     redefined under .dark. Everything on a map — boundaries, handles, badges — and every legend swatch for them uses these. */
+  --map-accent: #b5654a;
+  --map-accent-fg: #ffffff;
+  --map-muted: #6f6a63;
+  --map-surface: #ffffff;
 }
 
 .dark {
@@ -41,6 +47,10 @@
   --color-accent-fg: var(--accent-fg);
   --color-ok: var(--ok);
   --color-bad: var(--bad);
+  --color-map-accent: var(--map-accent);
+  --color-map-accent-fg: var(--map-accent-fg);
+  --color-map-muted: var(--map-muted);
+  --color-map-surface: var(--map-surface);
 }
 
 /* The design's uppercase, letter-spaced captions ("COUNTRY", "BOUNDARY AREA"). One class, used everywhere.
@@ -58,9 +68,9 @@
   .boundary-handle {
     width: 12px;
     height: 12px;
-    background: var(--accent);
-    border: 2px solid var(--surface);
-    box-shadow: 0 0 0 1px var(--accent);
+    background: var(--map-accent);
+    border: 2px solid var(--map-surface);
+    box-shadow: 0 0 0 1px var(--map-accent);
     cursor: nwse-resize;
   }
 
@@ -69,29 +79,37 @@
     cursor: move;
   }
 
-  /* Store markers on the dashboard map: a round badge whose colour is the layer, holding the category's icon. */
-  .store-pin {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-    border: 2px solid var(--surface);
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
-  }
+}
 
-  .store-pin-discovered {
-    background: var(--muted);
-    color: var(--surface);
-  }
+/* Store markers on the dashboard map: a round badge whose colour is the layer, holding the category's icon.
+   Leaflet's own stylesheet sets display on every marker icon; it is unlayered, so a rule inside a layer can never beat
+   it, and it may be emitted after this file, so equal specificity would lose too. Hence outside the layers, and two
+   classes where Leaflet has one. */
+.leaflet-marker-icon.store-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 2px solid var(--map-surface);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+}
 
-  .store-pin-inside {
-    background: var(--accent);
-    color: var(--accent-fg);
-  }
+.store-pin svg {
+  display: block;
+}
 
-  .store-pin-outside {
-    background: var(--surface);
-    color: var(--accent);
-    border: 2px dashed var(--accent);
-  }
+.store-pin-discovered {
+  background: var(--map-muted);
+  color: var(--map-surface);
+}
+
+.store-pin-inside {
+  background: var(--map-accent);
+  color: var(--map-accent-fg);
+}
+
+.store-pin-outside {
+  background: var(--map-surface);
+  color: var(--map-accent);
+  border: 2px dashed var(--map-accent);
 }

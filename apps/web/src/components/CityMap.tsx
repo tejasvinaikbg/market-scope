@@ -33,7 +33,7 @@ function EditableBoundary({ boundary, onChange }: { boundary: Bbox; onChange: (b
   const centre: LatLng = { lat: (boundary.south + boundary.north) / 2, lng: (boundary.west + boundary.east) / 2 };
   return (
     <>
-      <Rectangle bounds={toBounds(boundary)} pathOptions={{ color: 'var(--accent)', weight: 2, fillOpacity: 0.08 }} />
+      <Rectangle bounds={toBounds(boundary)} pathOptions={{ color: 'var(--map-accent)', weight: 2, fillOpacity: 0.08 }} />
       {CORNERS.map(({ key, at, anchor }) => (
         <Marker key={key} position={at(boundary)} icon={cornerIcon} draggable eventHandlers={{
           dragstart: () => { start.current = { box: boundary, grab: at(boundary), anchor: anchor(boundary) }; },
@@ -70,15 +70,15 @@ export default function CityMap({ city, geocoder, boundary, onBoundaryChange }: 
         {!b && <div className="flex h-full items-center justify-center text-muted">Choose a country, state and city to see its boundary here.</div>}
         {b && <MapContainer center={[12.97, 77.59]} zoom={10} className="h-full w-full" scrollWheelZoom>
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          <Rectangle bounds={toBounds(b)} pathOptions={{ color: 'var(--muted)', weight: 1, dashArray: '6 6', fill: false }} />   {/* the city: a reference, not editable */}
+          <Rectangle bounds={toBounds(b)} pathOptions={{ color: 'var(--map-muted)', weight: 1, dashArray: '6 6', fill: false }} />   {/* the city: a reference, not editable; map colours never follow the theme */}
           {boundary && <EditableBoundary boundary={boundary} onChange={onBoundaryChange} />}
           <Fit bbox={b} />
         </MapContainer>}
       </div>
       {b && (
         <div className="caption flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-line bg-surface px-4 py-3">
-          <span className="flex items-center gap-2"><span className="inline-block w-5 border-t-2 border-accent" /> Discovery boundary</span>
-          <span className="flex items-center gap-2"><span className="inline-block w-5 border-t border-dashed border-muted" /> City boundary</span>
+          <span className="flex items-center gap-2"><span className="inline-block w-5 border-t-2 border-map-accent" /> Discovery boundary</span>
+          <span className="flex items-center gap-2"><span className="inline-block w-5 border-t border-dashed border-map-muted" /> City boundary</span>
         </div>
       )}
     </>

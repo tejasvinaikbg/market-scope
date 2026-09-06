@@ -14,9 +14,12 @@ export const LAYERS: { id: StoreLayer; label: string; tag: string }[] = [
 export const ALL_LAYERS: StoreLayer[] = LAYERS.map((l) => l.id);
 export const layerTag = (id: StoreLayer) => LAYERS.find((l) => l.id === id)?.tag ?? id;
 
-/** A layer's mark: a muted dot for what was discovered, the accent dot for the user's stores inside, a dashed ring for those outside. */
+/**
+ * A layer's mark: a muted dot for what was discovered, the accent dot for the user's stores inside, a dashed ring for those
+ * outside — in the map's own palette, which never follows the theme, so the swatch is the badge's colour in both themes.
+ */
 export function LayerSwatch({ layer }: { layer: StoreLayer }) {
-  const look = layer === 'discovered' ? 'bg-muted' : layer === 'portfolio_inside' ? 'bg-accent' : 'border-2 border-dashed border-accent';
+  const look = layer === 'discovered' ? 'bg-map-muted' : layer === 'portfolio_inside' ? 'bg-map-accent' : 'border-2 border-dashed border-map-accent';
   return <span aria-hidden className={`inline-block h-3 w-3 shrink-0 rounded-full ${look}`} />;
 }
 

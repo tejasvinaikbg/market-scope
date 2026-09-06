@@ -11,7 +11,16 @@ import { renderApp, mockApi } from '../helpers';
 
 jest.mock('next/navigation', () => ({ usePathname: () => '/dashboard/7', useParams: () => ({ id: '7' }) }));
 // Leaflet needs a real browser; the stand-in shows which stores reached the map. __esModule so the dynamic import sees a default export.
-jest.mock('@/components/MarketMap', () => ({ __esModule: true, default: (p: { stores: { id: string }[] }) => <div data-testid="map">{p.stores.map((s) => s.id).join(' ')}</div> }));
+jest.mock('@/components/MarketMap', () => ({
+  __esModule: true,
+  default: (p: { stores: { id: string }[]; selectedId: string | null; onSelect: (id: string) => void }) => (
+    <div data-testid="map" data-selected={p.selectedId ?? ''}>
+      {p.stores.map((s) => s.id).join(' ')}
+      {/* a stand-in for a click on a badge */}
+      {p.stores.map((s) => <button key={s.id} type="button" onClick={() => p.onSelect(s.id)}>badge {s.id}</button>)}
+    </div>
+  ),
+}));
 
 const supermarket = { id: 1, slug: 'supermarket', name: 'Supermarket' };
 const pharmacy = { id: 2, slug: 'pharmacy', name: 'Pharmacy' };
@@ -148,4 +157,28 @@ test('with every layer off nothing is asked for, and the page says why the list 
   for (const name of ['Discovered', 'Portfolio inside', 'Portfolio outside']) await userEvent.click(chips.getByRole('button', { name }));
   expect(await screen.findByText('No layers selected. Turn one on to see stores.')).toBeInTheDocument();
   expect(screen.getByTestId('map')).toBeEmptyDOMElement();
+});
+
+test('a store picked in the list is marked in both views, picked again it is let go', async () => {
+  withMarket(ready, { '': all });
+  renderApp(<Page />);
+  const row = await screen.findByRole('button', { name: /Our Whitefield store/ });
+  await userEvent.click(row);
+  expect(row).toHaveAttribute('aria-current', 'true');
+  expect(screen.getByTestId('map')).toHaveAttribute('data-selected', 'p:2');
+  expect(screen.getByRole('button', { name: /FreshMart Koramangala/ })).not.toHaveAttribute('aria-current');
+  await userEvent.click(row);
+  expect(row).not.toHaveAttribute('aria-current');
+  expect(screen.getByTestId('map')).toHaveAttribute('data-selected', '');
+});
+
+test('a store picked on the map is marked in the list, and only one store is ever picked', async () => {
+  withMarket(ready, { '': all });
+  renderApp(<Page />);
+  await userEvent.click(await screen.findByRole('button', { name: 'badge d:2' }));
+  expect(screen.getByRole('button', { name: /Apollo Pharmacy/ })).toHaveAttribute('aria-current', 'true');
+  await userEvent.click(screen.getByRole('button', { name: 'badge p:1' }));
+  expect(screen.getByRole('button', { name: /Our Koramangala store/ })).toHaveAttribute('aria-current', 'true');
+  expect(screen.getByRole('button', { name: /Apollo Pharmacy/ })).not.toHaveAttribute('aria-current');
+  expect(screen.getByTestId('map')).toHaveAttribute('data-selected', 'p:1');
 });

@@ -9,3 +9,6 @@ Object.defineProperty(window, 'matchMedia', {
 
 // Jest's jsdom environment has no fetch. Tests install their own with mockApi; an unmocked call fails loudly.
 Object.defineProperty(globalThis, 'fetch', { writable: true, value: () => { throw new Error('fetch is not mocked in this test'); } });
+
+// jsdom lays nothing out, so it has no scrollIntoView; the dashboard calls it to bring a picked row into view.
+Element.prototype.scrollIntoView = () => { };

@@ -47,7 +47,9 @@ export default function MarketMap({ boundary, stores, focus }: { boundary: Bbox;
       <div className="min-h-0 flex-1">
         <MapContainer center={[12.97, 77.59]} zoom={12} className="h-full w-full" scrollWheelZoom>
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          <Rectangle bounds={toBounds(boundary)} pathOptions={{ color: 'var(--accent)', weight: 2, fillOpacity: 0.04 }} />
+          {/* The tiles are light in both themes, so the map palette never changes with the theme; the boundary wears a white casing under the accent line. */}
+          <Rectangle bounds={toBounds(boundary)} pathOptions={{ color: 'var(--map-surface)', weight: 7, fill: false, opacity: 0.9 }} interactive={false} />
+          <Rectangle bounds={toBounds(boundary)} pathOptions={{ color: 'var(--map-accent)', weight: 3, fillOpacity: 0.05 }} interactive={false} />
           {stores.map((s) => (
             <Marker key={s.id} position={[s.lat, s.lng]} icon={pin(s.layer, s.category?.slug ?? null)} zIndexOffset={LOOK[s.layer].zIndexOffset}>
               <Tooltip>{s.name}{s.category ? ` · ${s.category.name}` : ''}</Tooltip>
@@ -58,7 +60,7 @@ export default function MarketMap({ boundary, stores, focus }: { boundary: Bbox;
         </MapContainer>
       </div>
       <div className="caption flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-line bg-surface px-4 py-3">
-        <span className="flex items-center gap-2"><span className="inline-block w-5 border-t-2 border-accent" /> Boundary</span>
+        <span className="flex items-center gap-2"><span className="inline-block w-5 border-t-2 border-map-accent" /> Boundary</span>
         {LAYERS.map((l) => <span key={l.id} className="flex items-center gap-2"><LayerSwatch layer={l.id} /> {l.label}</span>)}
         <span>Colour is the layer, the icon is the category</span>
       </div>
