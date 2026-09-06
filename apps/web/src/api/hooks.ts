@@ -69,6 +69,9 @@ export const useMarket = (id: number | null) =>
     refetchIntervalInBackground: true,
   });
 
+/** Every market, newest first, for the "open a previous market" list. Read fresh on every visit: a run may have ended since. */
+export const useMarkets = () => useQuery({ queryKey: ['markets'], queryFn: () => api<Market[]>('/markets'), staleTime: 0 });
+
 /** The stores path with its filters as the API reads them: comma lists, the search trimmed, nothing sent for "everything". */
 export function storesPath(id: number, f: StoreFilters) {
   const parts: string[] = [];

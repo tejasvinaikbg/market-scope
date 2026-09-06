@@ -7,6 +7,7 @@
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Page from '@/app/dashboard/[id]/page';
+import { Stepper } from '@/components/Stepper';
 import { renderApp, mockApi } from '../helpers';
 
 jest.mock('next/navigation', () => ({ usePathname: () => '/dashboard/7', useParams: () => ({ id: '7' }) }));
@@ -116,6 +117,9 @@ test('ready: totals, the list with its tags, the stores off the map with their r
   expect(screen.getByTestId('map')).toHaveTextContent('d:1 d:2 p:1 p:2');
   expect(screen.getByText('4 stores shown · 4 in this market')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Clear filters' })).not.toBeInTheDocument();
+  // two ways on: the list of every market, and a new one
+  expect(screen.getByRole('link', { name: /All markets/ })).toHaveAttribute('href', '/dashboard');
+  expect(screen.getByRole('link', { name: /Create another market/ })).toHaveAttribute('href', '/setup');
 });
 
 test('turning a layer off asks the API for the others; the list, the map and the footer follow, the totals do not', async () => {
@@ -181,4 +185,19 @@ test('a store picked on the map is marked in the list, and only one store is eve
   expect(screen.getByRole('button', { name: /Our Koramangala store/ })).toHaveAttribute('aria-current', 'true');
   expect(screen.getByRole('button', { name: /Apollo Pharmacy/ })).not.toHaveAttribute('aria-current');
   expect(screen.getByTestId('map')).toHaveAttribute('data-selected', 'p:1');
+});
+
+
+test('a run that found nothing says so and suggests what to change', async () => {
+  withMarket({ ...ready, storeCount: 0, placement: { inside: 0, outside: 0, unlocated: 0 }, geocoding: { total: 0, done: 0, failed: 0 } }, { '': none });
+  renderApp(<Page />);
+  expect(await screen.findByText('Nothing was found for Supermarket, Pharmacy inside this boundary. Try a larger boundary or other categories.')).toBeInTheDocument();
+  expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+});
+
+test('the open market becomes the session\'s market, so the stepper names it', async () => {
+  withMarket(ready, { '': all });
+  renderApp(<><Stepper /><Page /></>);
+  expect(await screen.findByText('Bengaluru · sample · 19.9 km²')).toBeInTheDocument();
+  expect(screen.getByRole('link', { name: /Market dashboard/ })).toHaveAttribute('href', '/dashboard/7');
 });

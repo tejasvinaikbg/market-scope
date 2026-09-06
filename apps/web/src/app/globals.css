@@ -21,6 +21,8 @@
   --map-accent-fg: #ffffff;
   --map-muted: #6f6a63;
   --map-surface: #ffffff;
+  --map-draft: #2563eb;      /* the boundary while it is being drawn on the setup screen */
+  --map-over: #dc2626;       /* the same boundary once it is larger than the cap */
 }
 
 .dark {
@@ -51,6 +53,8 @@
   --color-map-accent-fg: var(--map-accent-fg);
   --color-map-muted: var(--map-muted);
   --color-map-surface: var(--map-surface);
+  --color-map-draft: var(--map-draft);
+  --color-map-over: var(--map-over);
 }
 
 /* The design's uppercase, letter-spaced captions ("COUNTRY", "BOUNDARY AREA"). One class, used everywhere.
@@ -68,15 +72,21 @@
   .boundary-handle {
     width: 12px;
     height: 12px;
-    background: var(--map-accent);
+    background: var(--map-draft);
     border: 2px solid var(--map-surface);
-    box-shadow: 0 0 0 1px var(--map-accent);
+    box-shadow: 0 0 0 1px var(--map-draft);
     cursor: nwse-resize;
   }
 
   .boundary-handle-move {
     border-radius: 50%;
     cursor: move;
+  }
+
+  /* Over the cap: the handles turn with the rectangle. */
+  .boundary-handle-over {
+    background: var(--map-over);
+    box-shadow: 0 0 0 1px var(--map-over);
   }
 
 }
@@ -96,6 +106,12 @@
 
 .store-pin svg {
   display: block;
+}
+
+/* The picked store: a ring in the accent with a white gap, outside the badge, so the badge's own colour still says the
+   layer. A box-shadow, not an outline: a real click focuses the badge, and focus rules switch outlines off. */
+.leaflet-marker-icon.store-pin-picked {
+  box-shadow: 0 0 0 2px var(--map-surface), 0 0 0 5px var(--map-accent), 0 1px 3px rgb(0 0 0 / 0.35);
 }
 
 .store-pin-discovered {

@@ -3,7 +3,8 @@
  * The dashboard's map: the boundary as the solid rectangle, one marker per store — a round badge whose colour is the
  * layer and whose icon is the category, the way a map app marks a cafe with a cup — the store's name and category on
  * hover, and the legend that speaks the chips' words. The rows arrive already filtered — the map draws what it is given,
- * the same rows as the list. `focus` is the store picked in the list; the map moves to it.
+ * the same rows as the list. `selectedId` is the store picked in either view: its badge is larger and ringed, its label
+ * stays open, and a click on any badge reports it up. `focus` is set only for a pick made in the list; the map moves to it.
  */
 import { MapContainer, TileLayer, Rectangle, Marker, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
@@ -23,12 +24,17 @@ const LOOK: Record<StoreLayer, { className: string; zIndexOffset: number }> = {
 };
 
 // One Leaflet icon per (layer, category), made on first use and shared by every marker that needs it.
+// The picked store's badge is larger, ringed, and above everything else.
 const icons = new Map<string, L.DivIcon>();
-const pin = (layer: StoreLayer, slug: string | null) => {
-  const key = `${layer}:${slug ?? ''}`;
+const pin = (layer: StoreLayer, slug: string | null, picked: boolean) => {
+  const key = `${layer}:${slug ?? ''}:${picked}`;
   let icon = icons.get(key);
   if (!icon) {
-    icon = L.divIcon({ className: LOOK[layer].className, html: categoryIconHtml(slug), iconSize: [26, 26], iconAnchor: [13, 13], tooltipAnchor: [0, -14] });
+    const size = picked ? 32 : 26;
+    icon = L.divIcon({
+      className: `${LOOK[layer].className}${picked ? ' store-pin-picked' : ''}`, html: categoryIconHtml(slug, picked ? 16 : 14),
+      iconSize: [size, size], iconAnchor: [size / 2, size / 2], tooltipAnchor: [0, -size / 2 - 1],
+    });
     icons.set(key, icon);
   }
   return icon;
@@ -41,7 +47,9 @@ function Focus({ at }: { at: LatLng | null }) {
   return null;
 }
 
-export default function MarketMap({ boundary, stores, focus }: { boundary: Bbox; stores: Store[]; focus: LatLng | null }) {
+export default function MarketMap({ boundary, stores, focus, selectedId, onSelect }: {
+  boundary: Bbox; stores: Store[]; focus: LatLng | null; selectedId: string | null; onSelect: (id: string) => void;
+}) {
   return (
     <>
       <div className="min-h-0 flex-1">
@@ -50,11 +58,16 @@ export default function MarketMap({ boundary, stores, focus }: { boundary: Bbox;
           {/* The tiles are light in both themes, so the map palette never changes with the theme; the boundary wears a white casing under the accent line. */}
           <Rectangle bounds={toBounds(boundary)} pathOptions={{ color: 'var(--map-surface)', weight: 7, fill: false, opacity: 0.9 }} interactive={false} />
           <Rectangle bounds={toBounds(boundary)} pathOptions={{ color: 'var(--map-accent)', weight: 3, fillOpacity: 0.05 }} interactive={false} />
-          {stores.map((s) => (
-            <Marker key={s.id} position={[s.lat, s.lng]} icon={pin(s.layer, s.category?.slug ?? null)} zIndexOffset={LOOK[s.layer].zIndexOffset}>
-              <Tooltip>{s.name}{s.category ? ` · ${s.category.name}` : ''}</Tooltip>
-            </Marker>
-          ))}
+          {stores.map((s) => {
+            const picked = s.id === selectedId;
+            return (
+              <Marker key={s.id} position={[s.lat, s.lng]} icon={pin(s.layer, s.category?.slug ?? null, picked)}
+                zIndexOffset={picked ? 1000 : LOOK[s.layer].zIndexOffset} eventHandlers={{ click: () => onSelect(s.id) }}>
+                {/* The picked store keeps its label open; the others show theirs on hover. The key remounts the label when that changes. */}
+                <Tooltip key={String(picked)} permanent={picked}>{s.name}{s.category ? ` · ${s.category.name}` : ''}</Tooltip>
+              </Marker>
+            );
+          })}
           <Fit bbox={boundary} />
           <Focus at={focus} />
         </MapContainer>

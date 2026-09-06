@@ -3,16 +3,18 @@
  * Step 03 — the market dashboard. The market as the server stored it and how discovery is going come first, for every
  * status. Once there are stores: the four totals, the layers to show, a search box with category chips, and the list beside
  * the map. Map and list draw the same filtered rows from one request; the totals never follow the filters. The page polls
- * while the run is in flight, so stores appear as they are found, and stops when it ends.
+ * while the run is in flight, so stores appear as they are found, and stops when it ends. A store picked in the list or on
+ * the map is marked in both, so the two views always point at the same store.
  */
-import { useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import dynamic from 'next/dynamic';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useDebounce } from 'use-debounce';
-import { Layers, Info, ArrowRight, Loader, Check, TriangleAlert, Search, MapPin, X } from 'lucide-react';
+import { Layers, Info, ArrowRight, ChevronLeft, Loader, Check, TriangleAlert, Search, MapPin, X } from 'lucide-react';
 import type { LatLng } from '@market-scope/shared';
 import { useMarket, useMarketStores, type Market, type StoreLayer } from '@/api/hooks';
+import { useCurrentMarket } from '@/app/providers';
 import { LAYERS, ALL_LAYERS, LayerSwatch, layerTag, unlocatedReason } from '@/components/layers';
 import { CategoryIcon } from '@/components/categoryIcons';
 
@@ -95,11 +97,20 @@ export default function Page() {
   const { id } = useParams<{ id: string }>();
   const marketId = Number(id) || null;
   const market = useMarket(marketId);
+  // Whatever market is open is the session's market: the stepper shows it after a reload or from the previous-markets list.
+  const { market: current, setMarket } = useCurrentMarket();
+  useEffect(() => {
+    const m = market.data;
+    if (m && current?.id !== m.id) setMarket({ id: m.id, name: m.name, areaSqKm: m.areaSqKm });
+  }, [market.data, current, setMarket]);
   const [layers, setLayers] = useState<StoreLayer[]>(ALL_LAYERS);
   const [categories, setCategories] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [q] = useDebounce(search, 250);                  // one request per pause in typing, not one per key
-  const [focus, setFocus] = useState<LatLng | null>(null);
+  // The store picked in the list or on the map. Picked from the list, the map moves to it; picked on the map, the list scrolls to it.
+  const [selected, setSelected] = useState<{ id: string; from: 'list' | 'map' } | null>(null);
+  const rowRefs = useRef(new Map<string, HTMLButtonElement>());
+  useEffect(() => { if (selected?.from === 'map') rowRefs.current.get(selected.id)?.scrollIntoView({ block: 'nearest' }); }, [selected]);
   const everyLayer = layers.length === ALL_LAYERS.length;
   // With every layer on, nothing is sent: the API's default is everything. With no layer on, nothing is asked at all.
   const stores = useMarketStores(layers.length ? marketId : null, { layers: everyLayer ? undefined : layers, categories, q }, market.data?.status);
@@ -110,12 +121,18 @@ export default function Page() {
   }
   const m = market.data;
   const started = m.status !== 'pending';
+  const ended = m.status === 'ready' || m.status === 'partial';
   const rows = layers.length ? stores.data?.stores ?? [] : [];
   const unlocated = stores.data?.unlocated ?? [];
   const total = stores.data ? stores.data.counts.discovered + stores.data.counts.portfolioInside + stores.data.counts.portfolioOutside : 0;
   const anything = total > 0 || unlocated.length > 0;      // the controls and the list appear once there is something to show
   const filtered = !everyLayer || categories.length > 0 || q.trim() !== '';
   const clear = () => { setLayers(ALL_LAYERS); setCategories([]); setSearch(''); };
+  // Picking the picked store again lets go of it. The map only moves for a pick made in the list.
+  const pick = (id: string, from: 'list' | 'map') => setSelected((s) => (s?.id === id ? null : { id, from }));
+  const picked = (id: string) => selected?.id === id;
+  const selectedStore = selected ? rows.find((s) => s.id === selected.id) ?? null : null;
+  const focus: LatLng | null = selected?.from === 'list' && selectedStore ? { lat: selectedStore.lat, lng: selectedStore.lng } : null;
 
   return (
     <div className="grid grid-cols-1 md:h-[calc(100vh-8rem)] md:grid-cols-[400px_1fr]">
@@ -131,6 +148,9 @@ export default function Page() {
           <div className="border border-line bg-panel p-4" role="status" aria-live="polite">
             <div className="caption mb-2 flex items-center gap-2"><Info size={14} /> Store discovery</div>
             <DiscoveryStatus m={m} />
+            {ended && m.storeCount === 0 && (
+              <p className="mt-2 text-sm text-muted">Nothing was found for {m.categories.map((c) => c.name).join(', ')} inside this boundary. Try a larger boundary or other categories.</p>
+            )}
           </div>
           {started && <Totals m={m} />}
           {anything && (
@@ -167,11 +187,13 @@ export default function Page() {
                   <ul>
                     {rows.map((s) => (
                       <li key={s.id} className="border-b border-line">
-                        {/* A row is a button: picking a store moves the map to it. */}
-                        <button type="button" onClick={() => setFocus({ lat: s.lat, lng: s.lng })} className="flex w-full items-start gap-3 px-4 py-2.5 text-left hover:bg-panel md:px-6">
-                          <CategoryIcon slug={s.category?.slug} size={16} className="mt-1 shrink-0 text-muted" />
+                        {/* A row is a button: picking a store marks it here and on the map, and moves the map to it. The mark is the same ring the badge wears. */}
+                        <button type="button" aria-current={picked(s.id) || undefined} onClick={() => pick(s.id, 'list')}
+                          ref={(el) => { if (el) rowRefs.current.set(s.id, el); else rowRefs.current.delete(s.id); }}
+                          className={`flex w-full items-start gap-3 px-4 py-2.5 text-left md:px-6 ${picked(s.id) ? 'bg-accent/10 inset-ring-2 inset-ring-accent' : 'hover:bg-panel'}`}>
+                          <CategoryIcon slug={s.category?.slug} size={16} className={`mt-1 shrink-0 ${picked(s.id) ? 'text-accent' : 'text-muted'}`} />
                           <span className="min-w-0 flex-1">
-                            <span className="block truncate font-medium">{s.name}</span>
+                            <span className={`block truncate font-medium ${picked(s.id) ? 'text-accent' : ''}`}>{s.name}</span>
                             <span className="block truncate text-sm text-muted">{detail(s.category, s.address)}</span>
                           </span>
                           <span className="caption flex shrink-0 items-center gap-1.5 pt-1"><LayerSwatch layer={s.layer} /> {layerTag(s.layer)}</span>
@@ -203,13 +225,15 @@ export default function Page() {
           </div>
         )}
 
-        <div className="mt-auto p-4 md:p-6">
+        {/* Two ways on: every market the service holds, or a new one. */}
+        <div className="mt-auto flex flex-wrap gap-2 p-4 md:p-6">
+          <Link href="/dashboard" className="inline-flex items-center gap-2 rounded border border-line px-4 py-2 font-semibold"><ChevronLeft size={16} /> All markets</Link>
           <Link href="/setup" className="inline-flex items-center gap-2 rounded border border-line px-4 py-2 font-semibold">Create another market <ArrowRight size={16} /></Link>
         </div>
       </section>
 
       <section className="flex h-[50vh] flex-col md:h-full">
-        <MarketMap boundary={m.boundary} stores={rows} focus={focus} />
+        <MarketMap boundary={m.boundary} stores={rows} focus={focus} selectedId={selected?.id ?? null} onSelect={(id) => pick(id, 'map')} />
       </section>
     </div>
   );
