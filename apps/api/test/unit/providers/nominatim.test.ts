@@ -17,18 +17,30 @@ test('retries a 429 and returns the parsed box in south/north/west/east order', 
 
 test('lookupPoint searches inside the box only, and answers null when nothing is there', async () => {
   const urls: string[] = [];
-  const g = createNominatimGeocoder({ userAgent: 't', fetchImpl: (async (url: string | URL) => { urls.push(String(url)); return Response.json([hit]); }) as unknown as typeof fetch });
+  const g = createNominatimGeocoder({
+    userAgent: 't',
+    fetchImpl: (async (url: string | URL) => {
+      urls.push(String(url));
+      return Response.json([hit]);
+    }) as unknown as typeof fetch,
+  });
   const p = await g.lookupPoint('80 Feet Road, Koramangala', { south: 12.83, west: 77.46, north: 13.14, east: 77.78 });
   assert.deepEqual(p, { lat: 12.97, lng: 77.59 });
   const q = new URL(urls[0]!).searchParams;
-  assert.deepEqual([q.get('viewbox'), q.get('bounded'), q.get('limit')], ['77.46,12.83,77.78,13.14', '1', '1']);   // west,south,east,north
+  assert.deepEqual([q.get('viewbox'), q.get('bounded'), q.get('limit')], ['77.46,12.83,77.78,13.14', '1', '1']); // west,south,east,north
   const none = createNominatimGeocoder({ userAgent: 't', fetchImpl: respond([() => Response.json([])]) });
   assert.equal(await none.lookupPoint('nowhere', { south: 0, west: 0, north: 1, east: 1 }), null);
 });
 
 test('does not retry a 400', async () => {
   let calls = 0;
-  const g = createNominatimGeocoder({ userAgent: 't', fetchImpl: (async () => { calls++; return new Response('bad', { status: 400 }); }) as unknown as typeof fetch });
+  const g = createNominatimGeocoder({
+    userAgent: 't',
+    fetchImpl: (async () => {
+      calls++;
+      return new Response('bad', { status: 400 });
+    }) as unknown as typeof fetch,
+  });
   await assert.rejects(g.lookupBounds('x'), /nominatim 400/);
   assert.equal(calls, 1);
 });

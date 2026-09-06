@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 /* next-themes sets class="dark" on <html>; make Tailwind's dark: variant follow that class, not the OS. */
 @custom-variant dark (&:where(.dark, .dark *));
@@ -21,9 +21,9 @@
   --map-accent-fg: #ffffff;
   --map-muted: #6f6a63;
   --map-surface: #ffffff;
-  --map-match: #2e7d4f;      /* a portfolio store that found its discovered twin */
-  --map-draft: #2563eb;      /* the boundary while it is being drawn on the setup screen */
-  --map-over: #dc2626;       /* the same boundary once it is larger than the cap */
+  --map-match: #2e7d4f; /* a portfolio store that found its discovered twin */
+  --map-draft: #2563eb; /* the boundary while it is being drawn on the setup screen */
+  --map-over: #dc2626; /* the same boundary once it is larger than the cap */
 }
 
 .dark {
@@ -90,7 +90,6 @@
     background: var(--map-over);
     box-shadow: 0 0 0 1px var(--map-over);
   }
-
 }
 
 /* Store markers on the dashboard map: a round badge whose colour is the layer, holding the category's icon.
@@ -129,7 +128,10 @@
 /* The picked store: a ring in the accent with a white gap, outside the badge, so the badge's own colour still says the
    layer. A box-shadow, not an outline: a real click focuses the badge, and focus rules switch outlines off. */
 .leaflet-marker-icon.store-pin-picked {
-  box-shadow: 0 0 0 2px var(--map-surface), 0 0 0 5px var(--map-accent), 0 1px 3px rgb(0 0 0 / 0.35);
+  box-shadow:
+    0 0 0 2px var(--map-surface),
+    0 0 0 5px var(--map-accent),
+    0 1px 3px rgb(0 0 0 / 0.35);
 }
 
 .store-pin-discovered {

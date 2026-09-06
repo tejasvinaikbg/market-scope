@@ -10,85 +10,156 @@ import { createMarket, getMarket, listMarketStores, rerunMarket, deleteMarket, u
 
 const Bbox = z.object({ south: z.number(), west: z.number(), north: z.number(), east: z.number() }).openapi('Bbox');
 const Category = z.object({ id: z.number(), slug: z.string(), name: z.string() });
-const Market = z.object({
-  id: z.number(), name: z.string(),
-  portfolioId: z.number(), portfolioName: z.string(), cityId: z.number(), cityName: z.string(),
-  boundary: Bbox, areaSqKm: z.number(),
-  placesProvider: z.enum(['overpass', 'google']), geocoderProvider: z.enum(['nominatim', 'google']),
-  categories: z.array(Category), createdAt: z.string(),
-  status: z.enum(['pending', 'running', 'ready', 'partial', 'failed']), error: z.string().nullable(),
-  startedAt: z.string().nullable(), completedAt: z.string().nullable(), storeCount: z.number(),
-  progress: z.object({ tiles: z.number(), done: z.number(), failed: z.number() }).nullable(),
-  geocoding: z.object({ total: z.number(), done: z.number(), failed: z.number() }),
-  placement: z.object({ inside: z.number(), outside: z.number(), unlocated: z.number() }),
-  matched: z.number(),
-  busy: z.boolean(),
-}).openapi('Market');
-const CreateMarket = z.object({
-  name: z.string().trim().min(1).max(120).optional(),
-  portfolioId: z.number().int().positive(),
-  cityId: z.number().int().positive(),
-  categoryIds: z.array(z.number().int().positive()).min(1),
-  boundary: Bbox,
-  placesProvider: z.enum(['overpass', 'google']).default('overpass'),
-  geocoderProvider: z.enum(['nominatim', 'google']).default('nominatim'),
-}).openapi('CreateMarket');
+const Market = z
+  .object({
+    id: z.number(),
+    name: z.string(),
+    portfolioId: z.number(),
+    portfolioName: z.string(),
+    cityId: z.number(),
+    cityName: z.string(),
+    boundary: Bbox,
+    areaSqKm: z.number(),
+    placesProvider: z.enum(['overpass', 'google']),
+    geocoderProvider: z.enum(['nominatim', 'google']),
+    categories: z.array(Category),
+    createdAt: z.string(),
+    status: z.enum(['pending', 'running', 'ready', 'partial', 'failed']),
+    error: z.string().nullable(),
+    startedAt: z.string().nullable(),
+    completedAt: z.string().nullable(),
+    storeCount: z.number(),
+    progress: z.object({ tiles: z.number(), done: z.number(), failed: z.number() }).nullable(),
+    geocoding: z.object({ total: z.number(), done: z.number(), failed: z.number() }),
+    placement: z.object({ inside: z.number(), outside: z.number(), unlocated: z.number() }),
+    matched: z.number(),
+    busy: z.boolean(),
+  })
+  .openapi('Market');
+const CreateMarket = z
+  .object({
+    name: z.string().trim().min(1).max(120).optional(),
+    portfolioId: z.number().int().positive(),
+    cityId: z.number().int().positive(),
+    categoryIds: z.array(z.number().int().positive()).min(1),
+    boundary: Bbox,
+    placesProvider: z.enum(['overpass', 'google']).default('overpass'),
+    geocoderProvider: z.enum(['nominatim', 'google']).default('nominatim'),
+  })
+  .openapi('CreateMarket');
 const idParam = z.object({ id: z.coerce.number().int().positive() });
 
 // Filters arrive as comma-separated query strings: ?layers=discovered,portfolio_inside&categories=supermarket&q=apollo
-const commaList = (v: string | undefined) => (v ? v.split(',').map((s) => s.trim()).filter(Boolean) : undefined);
-const StoreFiltersQuery = z.object({
-  layers: z.string().optional().transform(commaList).pipe(z.array(z.enum(['discovered', 'portfolio_inside', 'portfolio_outside', 'matched'])).optional()),
-  categories: z.string().optional().transform(commaList).pipe(z.array(z.string().min(1)).optional()),
-  q: z.string().trim().max(100).optional(),
-}).openapi('StoreFilters');
+const commaList = (v: string | undefined) =>
+  v
+    ? v
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : undefined;
+const StoreFiltersQuery = z
+  .object({
+    layers: z
+      .string()
+      .optional()
+      .transform(commaList)
+      .pipe(z.array(z.enum(['discovered', 'portfolio_inside', 'portfolio_outside', 'matched'])).optional()),
+    categories: z
+      .string()
+      .optional()
+      .transform(commaList)
+      .pipe(z.array(z.string().min(1)).optional()),
+    q: z.string().trim().max(100).optional(),
+  })
+  .openapi('StoreFilters');
 const StoreCategory = Category.nullable();
-const Store = z.object({
-  id: z.string(), layer: z.enum(['discovered', 'portfolio_inside', 'portfolio_outside']), name: z.string(), category: StoreCategory,
-  lat: z.number(), lng: z.number(), address: z.string().nullable(), source: z.string(),
-  match: z.object({ id: z.string(), name: z.string(), distanceM: z.number() }).nullable(),
-}).openapi('Store');
-const MarketStores = z.object({
-  stores: z.array(Store),
-  unlocated: z.array(z.object({ id: z.string(), name: z.string(), category: StoreCategory, address: z.string().nullable(), reason: z.string().nullable() })),
-  counts: z.object({ discovered: z.number(), portfolioInside: z.number(), portfolioOutside: z.number(), portfolioUnlocated: z.number(), matched: z.number() }),
-}).openapi('MarketStores');
+const Store = z
+  .object({
+    id: z.string(),
+    layer: z.enum(['discovered', 'portfolio_inside', 'portfolio_outside']),
+    name: z.string(),
+    category: StoreCategory,
+    lat: z.number(),
+    lng: z.number(),
+    address: z.string().nullable(),
+    source: z.string(),
+    match: z.object({ id: z.string(), name: z.string(), distanceM: z.number() }).nullable(),
+  })
+  .openapi('Store');
+const MarketStores = z
+  .object({
+    stores: z.array(Store),
+    unlocated: z.array(z.object({ id: z.string(), name: z.string(), category: StoreCategory, address: z.string().nullable(), reason: z.string().nullable() })),
+    counts: z.object({
+      discovered: z.number(),
+      portfolioInside: z.number(),
+      portfolioOutside: z.number(),
+      portfolioUnlocated: z.number(),
+      matched: z.number(),
+    }),
+  })
+  .openapi('MarketStores');
 
 registry.registerPath({
-  method: 'post', path: '/api/markets', tags: ['markets'], summary: 'Create a market from a portfolio, a city, a boundary and categories',
-  description: 'The boundary is measured with PostGIS; over the area cap the request is rejected with the measured value in `details.areaSqKm`. The market is created as `pending` and discovery runs in the background; poll GET /api/markets/{id} for `status` and `storeCount`.',
+  method: 'post',
+  path: '/api/markets',
+  tags: ['markets'],
+  summary: 'Create a market from a portfolio, a city, a boundary and categories',
+  description:
+    'The boundary is measured with PostGIS; over the area cap the request is rejected with the measured value in `details.areaSqKm`. The market is created as `pending` and discovery runs in the background; poll GET /api/markets/{id} for `status` and `storeCount`.',
   request: { body: { content: { 'application/json': { schema: CreateMarket } } } },
   responses: { 201: { description: 'Created', content: { 'application/json': { schema: Market } } }, ...errorResponses(400, 404, 500) },
 });
 registry.registerPath({
-  method: 'get', path: '/api/markets', tags: ['markets'], summary: 'Markets, newest first',
+  method: 'get',
+  path: '/api/markets',
+  tags: ['markets'],
+  summary: 'Markets, newest first',
   responses: { 200: { description: 'OK', content: { 'application/json': { schema: z.array(Market) } } }, ...errorResponses(500) },
 });
 registry.registerPath({
-  method: 'get', path: '/api/markets/{id}/stores', tags: ['markets'], summary: "Everything the market's dashboard draws",
-  description: 'Discovered stores and the portfolio\'s stores with their placement — and, for a portfolio store, the discovered store it was matched to within MATCH_DISTANCE_M — as one list filtered by `layers` (`matched` selects the portfolio stores with a match, beside the other layers), `categories` (slugs) and `q` (name contains), plus the unlocated portfolio stores and unfiltered totals.',
+  method: 'get',
+  path: '/api/markets/{id}/stores',
+  tags: ['markets'],
+  summary: "Everything the market's dashboard draws",
+  description:
+    "Discovered stores and the portfolio's stores with their placement — and, for a portfolio store, the discovered store it was matched to within MATCH_DISTANCE_M — as one list filtered by `layers` (`matched` selects the portfolio stores with a match, beside the other layers), `categories` (slugs) and `q` (name contains), plus the unlocated portfolio stores and unfiltered totals.",
   request: { params: idParam, query: StoreFiltersQuery },
   responses: { 200: { description: 'OK', content: { 'application/json': { schema: MarketStores } } }, ...errorResponses(400, 404, 500) },
 });
 registry.registerPath({
-  method: 'get', path: '/api/markets/{id}', tags: ['markets'], summary: 'One market',
+  method: 'get',
+  path: '/api/markets/{id}',
+  tags: ['markets'],
+  summary: 'One market',
   request: { params: idParam },
   responses: { 200: { description: 'OK', content: { 'application/json': { schema: Market } } }, ...errorResponses(400, 404, 500) },
 });
 registry.registerPath({
-  method: 'put', path: '/api/markets/{id}', tags: ['markets'], summary: "Rewrite a market's decisions and run it again",
-  description: 'The same body and rules as creating one. What was found for the old decisions is discarded, the market is queued afresh. Refused with 409 while a run is in flight.',
+  method: 'put',
+  path: '/api/markets/{id}',
+  tags: ['markets'],
+  summary: "Rewrite a market's decisions and run it again",
+  description:
+    'The same body and rules as creating one. What was found for the old decisions is discarded, the market is queued afresh. Refused with 409 while a run is in flight.',
   request: { params: idParam, body: { content: { 'application/json': { schema: CreateMarket } } } },
   responses: { 202: { description: 'Queued', content: { 'application/json': { schema: Market } } }, ...errorResponses(400, 404, 409, 500) },
 });
 registry.registerPath({
-  method: 'post', path: '/api/markets/{id}/runs', tags: ['markets'], summary: 'Run discovery again for a finished market',
-  description: 'Queues the same pipeline for the market: locate, place, discover, match. Every step rewrites its rows, so nothing duplicates. Refused with 409 while a run is in flight. Answers with the market, queued.',
+  method: 'post',
+  path: '/api/markets/{id}/runs',
+  tags: ['markets'],
+  summary: 'Run discovery again for a finished market',
+  description:
+    'Queues the same pipeline for the market: locate, place, discover, match. Every step rewrites its rows, so nothing duplicates. Refused with 409 while a run is in flight. Answers with the market, queued.',
   request: { params: idParam },
   responses: { 202: { description: 'Queued', content: { 'application/json': { schema: Market } } }, ...errorResponses(400, 404, 409, 500) },
 });
 registry.registerPath({
-  method: 'delete', path: '/api/markets/{id}', tags: ['markets'], summary: 'Delete a market and everything found for it',
+  method: 'delete',
+  path: '/api/markets/{id}',
+  tags: ['markets'],
+  summary: 'Delete a market and everything found for it',
   description: 'Discovered stores, placements, matches and queued jobs go with it. Refused with 409 while a run is in flight.',
   request: { params: idParam },
   responses: { 204: { description: 'Deleted' }, ...errorResponses(400, 404, 409, 500) },
@@ -96,12 +167,27 @@ registry.registerPath({
 
 export function marketsRouter() {
   const router = Router();
-  router.post('/markets', async (req, res) => { res.status(201).json(await createMarket(CreateMarket.parse(req.body))); });
-  router.get('/markets', async (_req, res) => { res.json(await marketsQueries.list()); });
-  router.get('/markets/:id', async (req, res) => { res.json(await getMarket(idParam.parse(req.params).id)); });
-  router.get('/markets/:id/stores', async (req, res) => { res.json(await listMarketStores(idParam.parse(req.params).id, StoreFiltersQuery.parse(req.query))); });
-  router.put('/markets/:id', async (req, res) => { res.status(202).json(await updateMarket(idParam.parse(req.params).id, CreateMarket.parse(req.body))); });
-  router.post('/markets/:id/runs', async (req, res) => { res.status(202).json(await rerunMarket(idParam.parse(req.params).id)); });
-  router.delete('/markets/:id', async (req, res) => { await deleteMarket(idParam.parse(req.params).id); res.status(204).end(); });
+  router.post('/markets', async (req, res) => {
+    res.status(201).json(await createMarket(CreateMarket.parse(req.body)));
+  });
+  router.get('/markets', async (_req, res) => {
+    res.json(await marketsQueries.list());
+  });
+  router.get('/markets/:id', async (req, res) => {
+    res.json(await getMarket(idParam.parse(req.params).id));
+  });
+  router.get('/markets/:id/stores', async (req, res) => {
+    res.json(await listMarketStores(idParam.parse(req.params).id, StoreFiltersQuery.parse(req.query)));
+  });
+  router.put('/markets/:id', async (req, res) => {
+    res.status(202).json(await updateMarket(idParam.parse(req.params).id, CreateMarket.parse(req.body)));
+  });
+  router.post('/markets/:id/runs', async (req, res) => {
+    res.status(202).json(await rerunMarket(idParam.parse(req.params).id));
+  });
+  router.delete('/markets/:id', async (req, res) => {
+    await deleteMarket(idParam.parse(req.params).id);
+    res.status(204).end();
+  });
   return router;
 }

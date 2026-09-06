@@ -14,7 +14,7 @@ import type { Geocoder } from '../../src/providers/geocoder.ts';
 const server = buildApp().listen(0);
 const base = `http://localhost:${(server.address() as { port: number }).port}`;
 const fixture = createFixtureGeocoder(new URL('../../fixtures/geocode.json', import.meta.url).pathname);
-const quiet = () => { };
+const quiet = () => {};
 let portfolioId = 0;
 let marketId = 0;
 
@@ -23,10 +23,11 @@ before(async () => {
   form.append('name', 'test-geocoding');
   form.append('file', new Blob([await readFile(new URL('../../fixtures/sample_portfolio_bengaluru.csv', import.meta.url), 'utf8')]), 'sample.csv');
   portfolioId = (await (await fetch(`${base}/api/portfolios`, { method: 'POST', body: form })).json()).id;
-  await fetch(`${base}/api/cities/1/bbox`);                                                     // the city box the geocoder searches inside (cached on the row)
+  await fetch(`${base}/api/cities/1/bbox`); // the city box the geocoder searches inside (cached on the row)
   const res = await fetch(`${base}/api/markets`, {
-    method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ portfolioId, cityId: 1, categoryIds: [1], boundary: { south: 12.92, west: 77.60, north: 12.956, east: 77.646 } })
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ portfolioId, cityId: 1, categoryIds: [1], boundary: { south: 12.92, west: 77.6, north: 12.956, east: 77.646 } }),
   });
   marketId = (await res.json()).id;
 });
@@ -49,17 +50,30 @@ test('the three stores without coordinates are located inside the city; the seve
 
 test('a re-run asks about nobody: every store already has a point', async () => {
   let calls = 0;
-  const counting: Geocoder = { lookupBounds: fixture.lookupBounds, lookupPoint: (q, b) => { calls++; return fixture.lookupPoint(q, b); } };
+  const counting: Geocoder = {
+    lookupBounds: fixture.lookupBounds,
+    lookupPoint: (q, b) => {
+      calls++;
+      return fixture.lookupPoint(q, b);
+    },
+  };
   assert.deepEqual(await geocodePortfolio(marketId, { geocoder: counting, log: quiet }), { total: 0, located: 0, notFound: 0, errors: 0 });
   assert.equal(calls, 0);
 });
 
 test('an address the geocoder cannot find is recorded as not found, and an error as an error; both are retried next run', async () => {
-  await db('portfolio_stores').where({ portfolio_id: portfolioId, location_source: 'geocoded' }).update({ location: null, location_source: null, geocode_status: null });   // forget the three
+  await db('portfolio_stores')
+    .where({ portfolio_id: portfolioId, location_source: 'geocoded' })
+    .update({ location: null, location_source: null, geocode_status: null }); // forget the three
   const missing: Geocoder = { lookupBounds: fixture.lookupBounds, lookupPoint: async () => null };
   assert.deepEqual(await geocodePortfolio(marketId, { geocoder: missing, log: quiet }), { total: 3, located: 0, notFound: 3, errors: 0 });
   assert.deepEqual((await (await fetch(`${base}/api/markets/${marketId}`)).json()).geocoding, { total: 3, done: 0, failed: 3 });
-  const broken: Geocoder = { lookupBounds: fixture.lookupBounds, lookupPoint: async () => { throw new Error('nominatim 503'); } };
-  assert.deepEqual(await geocodePortfolio(marketId, { geocoder: broken, log: quiet }), { total: 3, located: 0, notFound: 0, errors: 3 });   // still asked: not found is not final
+  const broken: Geocoder = {
+    lookupBounds: fixture.lookupBounds,
+    lookupPoint: async () => {
+      throw new Error('nominatim 503');
+    },
+  };
+  assert.deepEqual(await geocodePortfolio(marketId, { geocoder: broken, log: quiet }), { total: 3, located: 0, notFound: 0, errors: 3 }); // still asked: not found is not final
   assert.deepEqual(await geocodePortfolio(marketId, { geocoder: fixture, log: quiet }), { total: 3, located: 3, notFound: 0, errors: 0 });
 });

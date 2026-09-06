@@ -12,8 +12,14 @@ const server = buildApp().listen(0);
 const base = `http://localhost:${(server.address() as { port: number }).port}`;
 const clearCache = () => db('cities').update({ bbox: null, centre: null, bbox_fetched_at: null });
 
-before(async () => { await clearCache(); });
-after(async () => { await clearCache(); server.close(); await db.destroy(); });
+before(async () => {
+  await clearCache();
+});
+after(async () => {
+  await clearCache();
+  server.close();
+  await db.destroy();
+});
 
 test('first call geocodes and caches; second call is served from the row', async () => {
   const first = await (await fetch(`${base}/api/cities/1/bbox`)).json();

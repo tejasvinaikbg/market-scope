@@ -14,26 +14,53 @@ export type Portfolio = { id: number; name: string; sourceFilename: string; rowC
 export type PortfolioSummary = Portfolio & { withCoords: number; withoutCoords: number; bounds: Bbox | null };
 export type UploadResult = PortfolioSummary & { warnings: FileIssue[] };
 export type Market = {
-  id: number; name: string; portfolioId: number; portfolioName: string; cityId: number; cityName: string;
-  boundary: Bbox; areaSqKm: number; placesProvider: 'overpass' | 'google'; geocoderProvider: 'nominatim' | 'google';
-  categories: Category[]; createdAt: string;
-  status: 'pending' | 'running' | 'ready' | 'partial' | 'failed'; error: string | null;
-  startedAt: string | null; completedAt: string | null; storeCount: number;
+  id: number;
+  name: string;
+  portfolioId: number;
+  portfolioName: string;
+  cityId: number;
+  cityName: string;
+  boundary: Bbox;
+  areaSqKm: number;
+  placesProvider: 'overpass' | 'google';
+  geocoderProvider: 'nominatim' | 'google';
+  categories: Category[];
+  createdAt: string;
+  status: 'pending' | 'running' | 'ready' | 'partial' | 'failed';
+  error: string | null;
+  startedAt: string | null;
+  completedAt: string | null;
+  storeCount: number;
   progress: { tiles: number; done: number; failed: number } | null;
   geocoding: { total: number; done: number; failed: number };
   placement: { inside: number; outside: number; unlocated: number };
   matched: number;
-  busy: boolean;                                                     // a run is in flight, or queued: nothing may change the market meanwhile
+  busy: boolean; // a run is in flight, or queued: nothing may change the market meanwhile
 };
 export type ProviderOption = { id: 'overpass' | 'nominatim' | 'google'; name: string; enabled: boolean; reason: 'not configured' | 'disabled' | null };
 export type Providers = { places: ProviderOption[]; geocoding: ProviderOption[] };
-export type CreateMarket = { name?: string; portfolioId: number; cityId: number; categoryIds: number[]; boundary: Bbox; placesProvider: Market['placesProvider']; geocoderProvider: Market['geocoderProvider'] };
+export type CreateMarket = {
+  name?: string;
+  portfolioId: number;
+  cityId: number;
+  categoryIds: number[];
+  boundary: Bbox;
+  placesProvider: Market['placesProvider'];
+  geocoderProvider: Market['geocoderProvider'];
+};
 export type StoreLayer = 'discovered' | 'portfolio_inside' | 'portfolio_outside';
 export type Store = {
-  id: string; layer: StoreLayer; name: string; category: Category | null; lat: number; lng: number; address: string | null; source: string;
-  match: { id: string; name: string; distanceM: number } | null;   // the discovered store this portfolio store is, when one was found
+  id: string;
+  layer: StoreLayer;
+  name: string;
+  category: Category | null;
+  lat: number;
+  lng: number;
+  address: string | null;
+  source: string;
+  match: { id: string; name: string; distanceM: number } | null; // the discovered store this portfolio store is, when one was found
 };
-export type LayerFilter = StoreLayer | 'matched';                    // 'matched' is asked for beside the layers: the portfolio stores with a partner
+export type LayerFilter = StoreLayer | 'matched'; // 'matched' is asked for beside the layers: the portfolio stores with a partner
 export type UnlocatedStore = { id: string; name: string; category: Category | null; address: string | null; reason: 'not_found' | 'error' | null };
 export type StoreCounts = { discovered: number; portfolioInside: number; portfolioOutside: number; portfolioUnlocated: number; matched: number };
 export type MarketStores = { stores: Store[]; unlocated: UnlocatedStore[]; counts: StoreCounts };
@@ -56,7 +83,7 @@ export function useUploadPortfolio() {
   return useMutation({
     mutationFn: (file: File) => {
       const form = new FormData();
-      form.append('file', file);                                          // the browser sets the multipart boundary; never set Content-Type by hand
+      form.append('file', file); // the browser sets the multipart boundary; never set Content-Type by hand
       return api<UploadResult>('/portfolios', { method: 'POST', body: form });
     },
     onSuccess: (result) => setPortfolio(result),
@@ -70,7 +97,9 @@ export function useUploadPortfolio() {
  */
 export const useMarket = (id: number | null) =>
   useQuery({
-    queryKey: ['market', id], queryFn: () => api<Market>(`/markets/${id}`), enabled: id != null,
+    queryKey: ['market', id],
+    queryFn: () => api<Market>(`/markets/${id}`),
+    enabled: id != null,
     refetchInterval: (query) => (query.state.data && ['pending', 'running'].includes(query.state.data.status) ? 2000 : false),
     refetchIntervalInBackground: true,
   });
@@ -82,7 +111,7 @@ export const useMarkets = () => useQuery({ queryKey: ['markets'], queryFn: () =>
 export function storesPath(id: number, f: StoreFilters) {
   const parts: string[] = [];
   if (f.layers?.length) parts.push(`layers=${f.layers.join(',')}`);
-  if (f.categories?.length) parts.push(`categories=${f.categories.join(',')}`);     // slugs are plain letters and underscores
+  if (f.categories?.length) parts.push(`categories=${f.categories.join(',')}`); // slugs are plain letters and underscores
   const q = f.q?.trim();
   if (q) parts.push(`q=${encodeURIComponent(q)}`);
   return `/markets/${id}/stores${parts.length ? `?${parts.join('&')}` : ''}`;
@@ -110,7 +139,10 @@ export function useUpdateMarket() {
   return useMutation({
     mutationFn: ({ id, input }: { id: number; input: CreateMarket }) =>
       api<Market>(`/markets/${id}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) }),
-    onSuccess: (market) => { setMarket(market); client.setQueryData(['market', market.id], market); },
+    onSuccess: (market) => {
+      setMarket(market);
+      client.setQueryData(['market', market.id], market);
+    },
   });
 }
 

@@ -8,7 +8,7 @@ import { portfoliosQueries } from '../queries/portfolios.ts';
 import { parsePortfolioFile } from './portfolio-file.ts';
 
 export async function importPortfolio(input: { name: string; filename: string; buffer: Buffer }) {
-  const { rows, warnings } = await parsePortfolioFile(input.buffer, input.filename);   // throws the 400s; nothing below runs
+  const { rows, warnings } = await parsePortfolioFile(input.buffer, input.filename); // throws the 400s; nothing below runs
   const portfolio = await withTransaction(async (trx) => {
     const p = await portfoliosQueries.insert({ name: input.name, sourceFilename: input.filename, rowCount: rows.length }, trx);
     await portfoliosQueries.insertStores(p.id, rows, trx);

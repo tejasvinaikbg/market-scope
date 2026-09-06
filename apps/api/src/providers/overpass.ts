@@ -9,7 +9,14 @@ import type { Bbox } from '@market-scope/shared';
 import { createThrottledFetch, withRetry, retryable } from '../lib/http.ts';
 import type { CategorySearch, DiscoveredPlace, PlacesProvider } from './places.ts';
 
-interface OverpassElement { type: 'node' | 'way' | 'relation'; id: number; lat?: number; lon?: number; center?: { lat: number; lon: number }; tags?: Record<string, string> }
+interface OverpassElement {
+  type: 'node' | 'way' | 'relation';
+  id: number;
+  lat?: number;
+  lon?: number;
+  center?: { lat: number; lon: number };
+  tags?: Record<string, string>;
+}
 
 /** Overpass QL string literal: backslashes and double quotes are the only characters that need escaping. */
 const literal = (v: string) => v.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
@@ -19,11 +26,10 @@ const literal = (v: string) => v.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
  * outline), all inside the tile, answered as JSON with a centre point for ways and the tags. Pure, so it is unit-tested.
  */
 export function buildOverpassQuery(tile: Bbox, categories: CategorySearch[], timeoutSec = 25): string {
-  const box = `${tile.south},${tile.west},${tile.north},${tile.east}`;                         // Overpass wants south,west,north,east
-  const clauses = categories.flatMap((c) => c.selectors.flatMap((s) => [
-    `node["${literal(s.key)}"="${literal(s.value)}"](${box});`,
-    `way["${literal(s.key)}"="${literal(s.value)}"](${box});`,
-  ]));
+  const box = `${tile.south},${tile.west},${tile.north},${tile.east}`; // Overpass wants south,west,north,east
+  const clauses = categories.flatMap((c) =>
+    c.selectors.flatMap((s) => [`node["${literal(s.key)}"="${literal(s.value)}"](${box});`, `way["${literal(s.key)}"="${literal(s.value)}"](${box});`]),
+  );
   return `[out:json][timeout:${timeoutSec}];(${clauses.join('')});out center tags;`;
 }
 
@@ -31,20 +37,32 @@ const ADDRESS_KEYS = ['addr:housenumber', 'addr:housename', 'addr:street', 'addr
 
 /** One element → one place, or null when it has no position or matches none of the categories. Pure, unit-tested. */
 export function toPlace(el: OverpassElement, categories: CategorySearch[]): DiscoveredPlace | null {
-  const lat = el.lat ?? el.center?.lat, lng = el.lon ?? el.center?.lon;   // nodes carry lat/lon; ways carry a centre
+  const lat = el.lat ?? el.center?.lat,
+    lng = el.lon ?? el.center?.lon; // nodes carry lat/lon; ways carry a centre
   if (lat === undefined || lng === undefined) return null;
   const tags = el.tags ?? {};
   const category = categories.find((c) => c.selectors.some((s) => tags[s.key] === s.value));
   if (!category) return null;
-  const address = ADDRESS_KEYS.map((k) => tags[k]).filter(Boolean).join(', ') || null;
+  const address =
+    ADDRESS_KEYS.map((k) => tags[k])
+      .filter(Boolean)
+      .join(', ') || null;
   return {
     providerPlaceId: `${el.type}/${el.id}`,
-    name: tags.name ?? tags.brand ?? `Unnamed ${category.slug.replace(/_/g, ' ')}`,   // a shop with no name is still a shop
-    categoryId: category.categoryId, lat, lng, address, tags,
+    name: tags.name ?? tags.brand ?? `Unnamed ${category.slug.replace(/_/g, ' ')}`, // a shop with no name is still a shop
+    categoryId: category.categoryId,
+    lat,
+    lng,
+    address,
+    tags,
   };
 }
 
-export interface OverpassOptions { userAgent: string; endpoints?: string[]; fetchImpl?: typeof fetch }
+export interface OverpassOptions {
+  userAgent: string;
+  endpoints?: string[];
+  fetchImpl?: typeof fetch;
+}
 
 export const DEFAULT_OVERPASS_ENDPOINTS = ['https://overpass-api.de/api/interpreter', 'https://overpass.kumi.systems/api/interpreter'];
 
@@ -54,7 +72,7 @@ export const DEFAULT_OVERPASS_ENDPOINTS = ['https://overpass-api.de/api/interpre
  */
 export function createOverpassProvider(opts: OverpassOptions): PlacesProvider {
   const endpoints = opts.endpoints ?? DEFAULT_OVERPASS_ENDPOINTS;
-  const request = createThrottledFetch({ userAgent: opts.userAgent, fetchImpl: opts.fetchImpl, timeoutMs: 40_000 });   // a little above the query's own 25 s
+  const request = createThrottledFetch({ userAgent: opts.userAgent, fetchImpl: opts.fetchImpl, timeoutMs: 40_000 }); // a little above the query's own 25 s
 
   /** One attempt against one mirror. Mirrors rotate with the attempt number, so a busy one does not block the run. */
   async function fetchOnce(query: string, attempt: number): Promise<OverpassElement[]> {
@@ -71,7 +89,7 @@ export function createOverpassProvider(opts: OverpassOptions): PlacesProvider {
     async discover(tile, categories) {
       if (categories.length === 0) return [];
       const query = buildOverpassQuery(tile, categories);
-      const elements = await withRetry((attempt) => fetchOnce(query, attempt), { retries: 3, minTimeout: 1500 });   // 1.5 s, 3 s, 6 s
+      const elements = await withRetry((attempt) => fetchOnce(query, attempt), { retries: 3, minTimeout: 1500 }); // 1.5 s, 3 s, 6 s
       return elements.map((el) => toPlace(el, categories)).filter((p): p is DiscoveredPlace => p !== null);
     },
   };

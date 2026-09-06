@@ -24,7 +24,11 @@ export const layerTag = (id: LayerFilter) => LAYERS.find((l) => l.id === id)?.ta
  */
 export function LayerSwatch({ layer }: { layer: LayerFilter }) {
   if (layer === 'matched') {
-    return <span aria-hidden className="inline-flex h-3 w-3 shrink-0 items-center justify-center rounded-full bg-map-match text-white"><Check size={9} strokeWidth={3} /></span>;
+    return (
+      <span aria-hidden className="inline-flex h-3 w-3 shrink-0 items-center justify-center rounded-full bg-map-match text-white">
+        <Check size={9} strokeWidth={3} />
+      </span>
+    );
   }
   const look = layer === 'discovered' ? 'bg-map-muted' : layer === 'portfolio_inside' ? 'bg-map-accent' : 'border-2 border-dashed border-map-accent';
   return <span aria-hidden className={`inline-block h-3 w-3 shrink-0 rounded-full ${look}`} />;

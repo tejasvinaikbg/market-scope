@@ -43,32 +43,58 @@ function EditableBoundary({ boundary, onChange }: { boundary: Bbox; onChange: (b
     <>
       <Rectangle bounds={toBounds(boundary)} pathOptions={{ color: over ? 'var(--map-over)' : 'var(--map-draft)', weight: 2, fillOpacity: 0.08 }} />
       {CORNERS.map(({ key, at, anchor }) => (
-        <Marker key={key} position={at(boundary)} icon={icons.corner} draggable eventHandlers={{
-          dragstart: () => { start.current = { box: boundary, grab: at(boundary), anchor: anchor(boundary) }; },
-          drag: (e) => { if (start.current) onChange(bboxFromCorners(start.current.anchor, e.target.getLatLng())); },
-        }} />
+        <Marker
+          key={key}
+          position={at(boundary)}
+          icon={icons.corner}
+          draggable
+          eventHandlers={{
+            dragstart: () => {
+              start.current = { box: boundary, grab: at(boundary), anchor: anchor(boundary) };
+            },
+            drag: (e) => {
+              if (start.current) onChange(bboxFromCorners(start.current.anchor, e.target.getLatLng()));
+            },
+          }}
+        />
       ))}
-      <Marker position={centre} icon={icons.centre} draggable eventHandlers={{
-        dragstart: () => { start.current = { box: boundary, grab: centre, anchor: centre }; },
-        drag: (e) => {
-          if (!start.current) return;
-          const p = e.target.getLatLng();
-          onChange(translateBbox(start.current.box, p.lat - start.current.grab.lat, p.lng - start.current.grab.lng));
-        },
-      }} />
+      <Marker
+        position={centre}
+        icon={icons.centre}
+        draggable
+        eventHandlers={{
+          dragstart: () => {
+            start.current = { box: boundary, grab: centre, anchor: centre };
+          },
+          drag: (e) => {
+            if (!start.current) return;
+            const p = e.target.getLatLng();
+            onChange(translateBbox(start.current.box, p.lat - start.current.grab.lat, p.lng - start.current.grab.lng));
+          },
+        }}
+      />
     </>
   );
 }
 
-export default function CityMap({ city, geocoder, boundary, onBoundaryChange }: {
-  city: CityBounds | null; geocoder: 'nominatim' | 'google'; boundary: Bbox | null; onBoundaryChange: (b: Bbox) => void;
+export default function CityMap({
+  city,
+  geocoder,
+  boundary,
+  onBoundaryChange,
+}: {
+  city: CityBounds | null;
+  geocoder: 'nominatim' | 'google';
+  boundary: Bbox | null;
+  onBoundaryChange: (b: Bbox) => void;
 }) {
   const b = city?.bbox ?? null;
   return (
     <>
       {b && (
         <div className="caption flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line bg-surface px-4 py-3">
-          <span className="flex items-center gap-2"><Square size={14} />
+          <span className="flex items-center gap-2">
+            <Square size={14} />
             {city!.name} · city boundary from {geocoder === 'nominatim' ? 'OSM Nominatim' : 'Google Geocoding'}
           </span>
           {boundary && <span>Drag the corners to resize, the centre to move</span>}
@@ -76,18 +102,30 @@ export default function CityMap({ city, geocoder, boundary, onBoundaryChange }: 
       )}
       <div className="min-h-0 flex-1">
         {!b && <div className="flex h-full items-center justify-center text-muted">Choose a country, state and city to see its boundary here.</div>}
-        {b && <MapContainer center={[12.97, 77.59]} zoom={10} className="h-full w-full" scrollWheelZoom>
-          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          <Rectangle bounds={toBounds(b)} pathOptions={{ color: 'var(--map-muted)', weight: 1, dashArray: '6 6', fill: false }} />   {/* the city: a reference, not editable; map colours never follow the theme */}
-          {boundary && <EditableBoundary boundary={boundary} onChange={onBoundaryChange} />}
-          <Fit bbox={b} />
-        </MapContainer>}
+        {b && (
+          <MapContainer center={[12.97, 77.59]} zoom={10} className="h-full w-full" scrollWheelZoom>
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            <Rectangle bounds={toBounds(b)} pathOptions={{ color: 'var(--map-muted)', weight: 1, dashArray: '6 6', fill: false }} />{' '}
+            {/* the city: a reference, not editable; map colours never follow the theme */}
+            {boundary && <EditableBoundary boundary={boundary} onChange={onBoundaryChange} />}
+            <Fit bbox={b} />
+          </MapContainer>
+        )}
       </div>
       {b && (
         <div className="caption flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-line bg-surface px-4 py-3">
-          <span className="flex items-center gap-2"><span className="inline-block w-5 border-t-2 border-map-draft" /> Discovery boundary</span>
-          <span className="flex items-center gap-2"><span className="inline-block w-5 border-t-2 border-map-over" /> Over the {MAX_MARKET_AREA_SQ_KM} km² cap</span>
-          <span className="flex items-center gap-2"><span className="inline-block w-5 border-t border-dashed border-map-muted" /> City boundary</span>
+          <span className="flex items-center gap-2">
+            <span className="inline-block w-5 border-t-2 border-map-draft" /> Discovery boundary
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="inline-block w-5 border-t-2 border-map-over" /> Over the {MAX_MARKET_AREA_SQ_KM} km² cap
+          </span>
+          <span className="flex items-center gap-2">
+            <span className="inline-block w-5 border-t border-dashed border-map-muted" /> City boundary
+          </span>
         </div>
       )}
     </>

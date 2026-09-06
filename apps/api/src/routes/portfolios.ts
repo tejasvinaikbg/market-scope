@@ -22,18 +22,30 @@ const UploadResult = PortfolioSummary.extend({ warnings: z.array(FileIssue) }).o
 const idParam = z.object({ id: z.coerce.number().int().positive() });
 
 registry.registerPath({
-  method: 'post', path: '/api/portfolios', tags: ['portfolios'],
+  method: 'post',
+  path: '/api/portfolios',
+  tags: ['portfolios'],
   summary: 'Upload a portfolio file (.csv or .xlsx)',
   description: `Multipart form: \`file\` (.csv or .xlsx, max ${MAX_MB} MB) and an optional \`name\`. The whole file is validated first; nothing is stored unless every row passes. Rejections carry \`details: FileIssue[]\` with the spreadsheet row and column.`,
-  request: { body: { content: { 'multipart/form-data': { schema: z.object({ name: z.string().optional(), file: z.string().openapi({ type: 'string', format: 'binary' }) }) } } } },
+  request: {
+    body: {
+      content: { 'multipart/form-data': { schema: z.object({ name: z.string().optional(), file: z.string().openapi({ type: 'string', format: 'binary' }) }) } },
+    },
+  },
   responses: { 201: { description: 'Stored', content: { 'application/json': { schema: UploadResult } } }, ...errorResponses(400, 500) },
 });
 registry.registerPath({
-  method: 'get', path: '/api/portfolios', tags: ['portfolios'], summary: 'Uploaded portfolios, newest first',
+  method: 'get',
+  path: '/api/portfolios',
+  tags: ['portfolios'],
+  summary: 'Uploaded portfolios, newest first',
   responses: { 200: { description: 'OK', content: { 'application/json': { schema: z.array(Portfolio) } } }, ...errorResponses(500) },
 });
 registry.registerPath({
-  method: 'get', path: '/api/portfolios/{id}', tags: ['portfolios'], summary: 'One portfolio with its coordinate counts',
+  method: 'get',
+  path: '/api/portfolios/{id}',
+  tags: ['portfolios'],
+  summary: 'One portfolio with its coordinate counts',
   request: { params: idParam },
   responses: { 200: { description: 'OK', content: { 'application/json': { schema: PortfolioSummary } } }, ...errorResponses(400, 404, 500) },
 });
@@ -46,9 +58,11 @@ const receiveFile: RequestHandler = (req, res, next) =>
   upload(req, res, (err: unknown) => {
     if (!err) return next();
     if (err instanceof multer.MulterError) {
-      return next(err.code === 'LIMIT_FILE_SIZE'
-        ? badRequest('FILE_TOO_LARGE', `File exceeds ${MAX_MB} MB`)
-        : badRequest('UPLOAD_ERROR', `${err.message}: send one file in the multipart field "file"`));
+      return next(
+        err.code === 'LIMIT_FILE_SIZE'
+          ? badRequest('FILE_TOO_LARGE', `File exceeds ${MAX_MB} MB`)
+          : badRequest('UPLOAD_ERROR', `${err.message}: send one file in the multipart field "file"`),
+      );
     }
     next(err);
   });
@@ -58,13 +72,17 @@ export function portfoliosRouter() {
 
   router.post('/portfolios', receiveFile, async (req, res) => {
     if (!req.file) throw badRequest('NO_FILE', 'Multipart field "file" is required');
-    const name = String(req.body?.name ?? '').trim() || req.file.originalname.replace(/\.[^.]+$/, '');   // default: filename without extension
+    const name = String(req.body?.name ?? '').trim() || req.file.originalname.replace(/\.[^.]+$/, ''); // default: filename without extension
     res.status(201).json(await importPortfolio({ name, filename: req.file.originalname, buffer: req.file.buffer }));
   });
 
-  router.get('/portfolios', async (_req, res) => { res.json(await portfoliosQueries.list()); });
+  router.get('/portfolios', async (_req, res) => {
+    res.json(await portfoliosQueries.list());
+  });
 
-  router.get('/portfolios/:id', async (req, res) => { res.json(await getPortfolio(idParam.parse(req.params).id)); });
+  router.get('/portfolios/:id', async (req, res) => {
+    res.json(await getPortfolio(idParam.parse(req.params).id));
+  });
 
   return router;
 }

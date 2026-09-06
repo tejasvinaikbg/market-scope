@@ -1,41 +1,44 @@
 /**
  * GET /api/cities/:id/bbox — a city's bounding box and centre, geocoded once and cached on the city row.
  */
-import { Router } from 'express'
+import { Router } from 'express';
 import { cacheFor } from '../middleware/cache-control.ts';
-import { z } from '../openapi/zod.ts'
-import { registry, errorResponses } from '../openapi/registry.ts'
-import { getCityBounds } from '../services/cities.ts'
+import { z } from '../openapi/zod.ts';
+import { registry, errorResponses } from '../openapi/registry.ts';
+import { getCityBounds } from '../services/cities.ts';
 
-const Bbox = z.object({ south: z.number(), west: z.number(), north: z.number(), east: z.number() }).openapi("Bbox")
-const CityBounds = z.object({ cityId: z.number(), name: z.string(), bbox: Bbox, centre: z.object({ lat: z.number(), lng: z.number() }), cached: z.boolean() }).openapi('CityBounds')
-const IdParam = z.object({ id: z.coerce.number().int().positive() })
+const Bbox = z.object({ south: z.number(), west: z.number(), north: z.number(), east: z.number() }).openapi('Bbox');
+const CityBounds = z
+  .object({ cityId: z.number(), name: z.string(), bbox: Bbox, centre: z.object({ lat: z.number(), lng: z.number() }), cached: z.boolean() })
+  .openapi('CityBounds');
+const IdParam = z.object({ id: z.coerce.number().int().positive() });
 
 registry.registerPath({
   method: 'get',
-  path: "/api/cities/{id}/bbox",
+  path: '/api/cities/{id}/bbox',
   tags: ['cities'],
   summary: 'Bounding box',
   request: {
-    params: IdParam
+    params: IdParam,
   },
   responses: {
     200: {
       description: 'OK',
       content: {
         'application/json': {
-          schema: CityBounds
-        }
-      }
+          schema: CityBounds,
+        },
+      },
     },
-    ...errorResponses(400, 404, 500)
-  }
-})
+    ...errorResponses(400, 404, 500),
+  },
+});
 
 export function citiesRouter() {
-  const router = Router()
-  router.get('/cities/:id/bbox', cacheFor(86_400), async (req, res) => {       // a city's box does not move
-    res.json(await getCityBounds(IdParam.parse(req.params).id))
-  })
-  return router
+  const router = Router();
+  router.get('/cities/:id/bbox', cacheFor(86_400), async (req, res) => {
+    // a city's box does not move
+    res.json(await getCityBounds(IdParam.parse(req.params).id));
+  });
+  return router;
 }

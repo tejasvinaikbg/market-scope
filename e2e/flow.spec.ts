@@ -10,7 +10,7 @@ const csv = 'apps/api/fixtures/e2e_portfolio_bengaluru.csv';
 async function createMarket(page: Page) {
   await page.goto('/');
   await page.setInputFiles('input[type=file]', csv);
-  await expect(page.getByText('e2e_portfolio_bengaluru · 3 stores')).toBeVisible();          // the stepper knows the portfolio
+  await expect(page.getByText('e2e_portfolio_bengaluru · 3 stores')).toBeVisible(); // the stepper knows the portfolio
 
   await page.getByRole('link', { name: /Market setup/ }).click();
   await page.getByLabel('Country').selectOption({ label: 'India' });
@@ -18,7 +18,7 @@ async function createMarket(page: Page) {
   await page.getByLabel('City').selectOption({ label: 'Bengaluru' });
   await page.getByRole('button', { name: 'Supermarket' }).click();
   await page.getByRole('button', { name: 'Pharmacy' }).click();
-  await expect(page.getByText('24', { exact: true })).toBeVisible();                            // the default boundary, 24 km²
+  await expect(page.getByText('24', { exact: true })).toBeVisible(); // the default boundary, 24 km²
   await page.getByRole('button', { name: /Create market/ }).click();
   await expect(page).toHaveURL(/\/dashboard\/\d+$/);
 }
@@ -30,12 +30,12 @@ test('upload, define, watch, read, pick, run again, list, delete', async ({ page
   const status = page.getByRole('status');
   await expect(status).toContainText('2 stores discovered', { timeout: 45_000 });
   await expect(status).toContainText('1 of them is a discovered store within 150 m');
-  await expect(page.getByRole('definition')).toHaveText(['2', '2', '1', '0', '1']);            // discovered, inside, outside, not located, matched
-  await expect(page.locator('.store-pin')).toHaveCount(5);                                       // 2 found + 3 of ours
+  await expect(page.getByRole('definition')).toHaveText(['2', '2', '1', '0', '1']); // discovered, inside, outside, not located, matched
+  await expect(page.locator('.store-pin')).toHaveCount(5); // 2 found + 3 of ours
   await expect(page.locator('.store-pin-check')).toHaveCount(1);
   const ours = page.getByRole('button', { name: /^Centre Mart Cubbon/ });
   await expect(ours).toContainText(/Matched · Centre Mart · \d+ m/);
-  await expect(page.getByRole('button', { name: /^Centre Mart/ }).filter({ hasText: 'Yours ·' })).toContainText('Yours · Centre Mart Cubbon');   // the found store, told from its side
+  await expect(page.getByRole('button', { name: /^Centre Mart/ }).filter({ hasText: 'Yours ·' })).toContainText('Yours · Centre Mart Cubbon'); // the found store, told from its side
 
   // Picking a store marks it in both views.
   await ours.click();

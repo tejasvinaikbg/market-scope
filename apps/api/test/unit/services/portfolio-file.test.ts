@@ -21,27 +21,38 @@ async function xlsx(rows: ExcelJS.CellValue[][]): Promise<Buffer> {
 
 /** Calls the parser expecting an AppError, and returns it so the test can read its code and details. */
 async function reject(buffer: Buffer, filename = 'stores.csv'): Promise<AppError> {
-  try { await parsePortfolioFile(buffer, filename); } catch (err) { if (isAppError(err)) return err; throw err; }
+  try {
+    await parsePortfolioFile(buffer, filename);
+  } catch (err) {
+    if (isAppError(err)) return err;
+    throw err;
+  }
   assert.fail('expected the file to be rejected');
 }
 
 test('a good file becomes rows with parsed coordinates', async () => {
-  const { rows, warnings } = await parsePortfolioFile(csv('A,Addr,Bengaluru,Karnataka,India,Supermarket,12.9,77.6', 'B,Addr,Bengaluru,Karnataka,India,Pharmacy,,'), 'stores.csv');
+  const { rows, warnings } = await parsePortfolioFile(
+    csv('A,Addr,Bengaluru,Karnataka,India,Supermarket,12.9,77.6', 'B,Addr,Bengaluru,Karnataka,India,Pharmacy,,'),
+    'stores.csv',
+  );
   assert.equal(rows.length, 2);
   assert.deepEqual([rows[0]?.latitude, rows[1]?.latitude], [12.9, null]);
   assert.deepEqual(warnings, []);
 });
 
 test('only .csv and .xlsx are accepted; empty files are rejected', async () => {
-  assert.equal((await reject(csv('A,B,C,D,E,F,,'), 'stores.xls')).code, 'UNSUPPORTED_FILE');     // the old binary format
+  assert.equal((await reject(csv('A,B,C,D,E,F,,'), 'stores.xls')).code, 'UNSUPPORTED_FILE'); // the old binary format
   assert.equal((await reject(Buffer.alloc(0))).code, 'INVALID_FILE');
-  assert.equal((await reject(Buffer.from(HEADER + '\n'))).code, 'INVALID_FILE');                  // a header with no data rows
+  assert.equal((await reject(Buffer.from(HEADER + '\n'))).code, 'INVALID_FILE'); // a header with no data rows
 });
 
 test('header errors are reported alone, before any row is looked at', async () => {
   const err = await reject(Buffer.from('store_name,address\nA,B'));
   assert.equal(err.code, 'INVALID_HEADERS');
-  assert.deepEqual((err.details as Array<{ column: string }>).map((d) => d.column), ['city', 'state', 'country', 'category']);
+  assert.deepEqual(
+    (err.details as Array<{ column: string }>).map((d) => d.column),
+    ['city', 'state', 'country', 'category'],
+  );
 });
 
 test('row issues name the spreadsheet row and column; blank lines are skipped', async () => {
@@ -67,12 +78,18 @@ test('a broken quote is INVALID_FILE, not a crash', async () => {
 test('an .xlsx parses like a CSV: numbers, rich text and blank rows, with spreadsheet row numbers', async () => {
   const file = await xlsx([
     HEADER.split(','),
-    ['FreshMart', '80 Feet Road', 'Bengaluru', 'Karnataka', 'India', 'Supermarket', 12.9352, 77.6245],   // numbers, as Excel stores them
-    [],                                                                                                  // a blank row 3
-    [{ richText: [{ text: 'Rich ' }, { text: 'Mart' }] }, 'Addr', 'Bengaluru', 'Karnataka', 'India', 'Pharmacy'],   // bold name, no coordinates
+    ['FreshMart', '80 Feet Road', 'Bengaluru', 'Karnataka', 'India', 'Supermarket', 12.9352, 77.6245], // numbers, as Excel stores them
+    [], // a blank row 3
+    [{ richText: [{ text: 'Rich ' }, { text: 'Mart' }] }, 'Addr', 'Bengaluru', 'Karnataka', 'India', 'Pharmacy'], // bold name, no coordinates
   ]);
   const { rows } = await parsePortfolioFile(file, 'stores.xlsx');
-  assert.deepEqual(rows.map((r) => [r.rowNumber, r.storeName, r.latitude]), [[2, 'FreshMart', 12.9352], [4, 'Rich Mart', null]]);
+  assert.deepEqual(
+    rows.map((r) => [r.rowNumber, r.storeName, r.latitude]),
+    [
+      [2, 'FreshMart', 12.9352],
+      [4, 'Rich Mart', null],
+    ],
+  );
 });
 
 test('in an .xlsx a formula counts by its result; a file that is not a workbook is INVALID_FILE', async () => {

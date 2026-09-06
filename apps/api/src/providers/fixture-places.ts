@@ -13,9 +13,7 @@ export function createFixturePlacesProvider(path: string): PlacesProvider {
     id: 'fixture',
     async discover(tile, categories) {
       elements ??= (JSON.parse(await readFile(path, 'utf8')) as { elements: Parameters<typeof toPlace>[0][] }).elements;
-      return elements
-        .map((el) => toPlace(el, categories))
-        .filter((p): p is DiscoveredPlace => p !== null && pointInBbox({ lat: p.lat, lng: p.lng }, tile));
+      return elements.map((el) => toPlace(el, categories)).filter((p): p is DiscoveredPlace => p !== null && pointInBbox({ lat: p.lat, lng: p.lng }, tile));
     },
   };
 }

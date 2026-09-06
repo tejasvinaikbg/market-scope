@@ -10,12 +10,13 @@ export interface ProviderOption {
   id: 'overpass' | 'nominatim' | 'google';
   name: string;
   enabled: boolean;
-  reason: 'not configured' | 'disabled' | null;   // why it is off, in the words the screen shows
+  reason: 'not configured' | 'disabled' | null; // why it is off, in the words the screen shows
 }
 
-type ProviderConfig = Pick<Config,
-  'OVERPASS_ENABLED' | 'NOMINATIM_ENABLED' |
-  'GOOGLE_PLACES_API_KEY' | 'GOOGLE_PLACES_ENABLED' | 'GOOGLE_GEOCODING_API_KEY' | 'GOOGLE_GEOCODING_ENABLED'>;
+type ProviderConfig = Pick<
+  Config,
+  'OVERPASS_ENABLED' | 'NOMINATIM_ENABLED' | 'GOOGLE_PLACES_API_KEY' | 'GOOGLE_PLACES_ENABLED' | 'GOOGLE_GEOCODING_API_KEY' | 'GOOGLE_GEOCODING_ENABLED'
+>;
 
 type State = Pick<ProviderOption, 'enabled' | 'reason'>;
 /** An OSM provider has only its switch. */

@@ -21,19 +21,20 @@ before(async () => {
   portfolioId = (await (await fetch(`${base}/api/portfolios`, { method: 'POST', body: form })).json()).id;
 });
 after(async () => {
-  if (markets.length) await db('markets').whereIn('id', markets).del();     // market_categories go with them
+  if (markets.length) await db('markets').whereIn('id', markets).del(); // market_categories go with them
   await db('portfolios').where({ id: portfolioId }).del();
   server.close();
   await db.destroy();
 });
 
-const koramangala = { south: 12.92, west: 77.60, north: 12.956, east: 77.646 };   // ~20 km²
+const koramangala = { south: 12.92, west: 77.6, north: 12.956, east: 77.646 }; // ~20 km²
 const wholeCity = { south: 12.8335, west: 77.4599, north: 13.1426, east: 77.7841 };
 
 /** POST /api/markets with sensible defaults; remembers created ids for cleanup. */
 async function create(overrides: Record<string, unknown> = {}) {
   const res = await fetch(`${base}/api/markets`, {
-    method: 'POST', headers: { 'content-type': 'application/json' },
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ portfolioId, cityId: 1, categoryIds: [1, 2], boundary: koramangala, ...overrides }),
   });
   const body = await res.json();
@@ -44,12 +45,15 @@ async function create(overrides: Record<string, unknown> = {}) {
 test('a legal boundary creates the market, measured by PostGIS, with the categories and boundary echoed back', async () => {
   const { status, body } = await create();
   assert.equal(status, 201, JSON.stringify(body));
-  assert.ok(Math.abs(body.areaSqKm - bboxAreaSqKm(koramangala)) < 0.2);        // spheroid vs sphere: same to within 1 %
-  assert.deepEqual(body.categories.map((c: { id: number }) => c.id), [1, 2]);
+  assert.ok(Math.abs(body.areaSqKm - bboxAreaSqKm(koramangala)) < 0.2); // spheroid vs sphere: same to within 1 %
+  assert.deepEqual(
+    body.categories.map((c: { id: number }) => c.id),
+    [1, 2],
+  );
   assert.deepEqual(body.boundary, koramangala);
   assert.equal(body.name, 'Bengaluru · test-markets');
   assert.deepEqual([body.placesProvider, body.geocoderProvider], ['overpass', 'nominatim']);
-  assert.deepEqual([body.status, body.storeCount, body.error], ['pending', 0, null]);   // discovery is queued, not run yet
+  assert.deepEqual([body.status, body.storeCount, body.error], ['pending', 0, null]); // discovery is queued, not run yet
 
   const one = await (await fetch(`${base}/api/markets/${body.id}`)).json();
   assert.equal(one.cityName, 'Bengaluru');
@@ -68,7 +72,7 @@ test('shape, categories and providers each fail with their own code', async () =
   assert.equal((await create({ boundary: { ...koramangala, south: 12.956, north: 12.92 } })).body.error.code, 'INVALID_BOUNDARY');
   assert.equal((await create({ boundary: { ...koramangala, north: 12.9201, east: 77.6001 } })).body.error.code, 'AREA_TOO_SMALL');
   assert.equal((await create({ categoryIds: [1, 999] })).body.error.code, 'UNKNOWN_CATEGORY');
-  assert.equal((await create({ categoryIds: [] })).body.error.code, 'VALIDATION_ERROR');           // zod: min(1)
+  assert.equal((await create({ categoryIds: [] })).body.error.code, 'VALIDATION_ERROR'); // zod: min(1)
   assert.equal((await create({ placesProvider: 'google' })).body.error.code, 'PROVIDER_UNAVAILABLE');
 });
 

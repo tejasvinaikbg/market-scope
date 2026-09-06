@@ -6,19 +6,26 @@
 import type { Bbox } from '@market-scope/shared';
 
 /** One OpenStreetMap tag to match, e.g. { key: 'shop', value: 'supermarket' } — the seed's osm_selectors. */
-export interface OsmSelector { key: string; value: string }
+export interface OsmSelector {
+  key: string;
+  value: string;
+}
 
 /** A chosen category with its search terms, and the id to file every hit under. */
-export interface CategorySearch { categoryId: number; slug: string; selectors: OsmSelector[] }
+export interface CategorySearch {
+  categoryId: number;
+  slug: string;
+  selectors: OsmSelector[];
+}
 
 export interface DiscoveredPlace {
-  providerPlaceId: string;          // 'node/123' or 'way/456': stable across runs, so a re-run does not duplicate a store
+  providerPlaceId: string; // 'node/123' or 'way/456': stable across runs, so a re-run does not duplicate a store
   name: string;
   categoryId: number;
   lat: number;
   lng: number;
   address: string | null;
-  tags: Record<string, string>;     // everything the source said, kept for the list and for questions later
+  tags: Record<string, string>; // everything the source said, kept for the list and for questions later
 }
 
 export interface PlacesProvider {

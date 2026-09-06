@@ -4,7 +4,9 @@
  */
 import type { RequestHandler } from 'express';
 
-export const cacheFor = (seconds: number): RequestHandler => (_req, res, next) => {
-  res.set('Cache-Control', `public, max-age=${seconds}`);
-  next();
-};
+export const cacheFor =
+  (seconds: number): RequestHandler =>
+  (_req, res, next) => {
+    res.set('Cache-Control', `public, max-age=${seconds}`);
+    next();
+  };

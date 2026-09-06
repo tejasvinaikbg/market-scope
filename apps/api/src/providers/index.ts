@@ -13,11 +13,11 @@ import { createFixturePlacesProvider } from './fixture-places.ts';
 
 const fixtures = join(import.meta.dirname, '..', '..', 'fixtures');
 
-export const geocoder: Geocoder = config.GEOCODER === 'fixture'
-  ? createFixtureGeocoder(join(fixtures, 'geocode.json'))
-  : createNominatimGeocoder({ userAgent: config.NOMINATIM_USER_AGENT });
+export const geocoder: Geocoder =
+  config.GEOCODER === 'fixture' ? createFixtureGeocoder(join(fixtures, 'geocode.json')) : createNominatimGeocoder({ userAgent: config.NOMINATIM_USER_AGENT });
 
 /** The same contact string identifies us to every OpenStreetMap service, as their usage policies ask. */
-export const places: PlacesProvider = config.PLACES === 'fixture'
-  ? createFixturePlacesProvider(join(fixtures, 'overpass.json'))
-  : createOverpassProvider({ userAgent: config.NOMINATIM_USER_AGENT, endpoints: config.OVERPASS_URLS });
+export const places: PlacesProvider =
+  config.PLACES === 'fixture'
+    ? createFixturePlacesProvider(join(fixtures, 'overpass.json'))
+    : createOverpassProvider({ userAgent: config.NOMINATIM_USER_AGENT, endpoints: config.OVERPASS_URLS });

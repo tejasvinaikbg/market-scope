@@ -13,7 +13,7 @@ const server = buildApp().listen(0);
 const base = `http://localhost:${(server.address() as { port: number }).port}`;
 const created: number[] = [];
 after(async () => {
-  if (created.length) await db('portfolios').whereIn('id', created).del();   // stores go with them (ON DELETE CASCADE)
+  if (created.length) await db('portfolios').whereIn('id', created).del(); // stores go with them (ON DELETE CASCADE)
   server.close();
   await db.destroy();
 });
@@ -21,7 +21,8 @@ after(async () => {
 const HEADER = 'store_name,address,city,state,country,category,latitude,longitude';
 
 /** POST a file the way a browser form does (the API decides by extension, not mime type). Remembers created ids for cleanup. */
-async function upload(content: string | Uint8Array<ArrayBuffer>, filename = 'stores.csv', name?: string) {   // Blob wants a plain ArrayBuffer-backed view
+async function upload(content: string | Uint8Array<ArrayBuffer>, filename = 'stores.csv', name?: string) {
+  // Blob wants a plain ArrayBuffer-backed view
   const form = new FormData();
   if (name) form.append('name', name);
   form.append('file', new Blob([content], { type: 'text/csv' }), filename);
@@ -44,7 +45,7 @@ test('the sample file: 10 stores, 7 with coordinates, 3 to geocode, every catego
 
   const one = await (await fetch(`${base}/api/portfolios/${body.id}`)).json();
   assert.equal(one.withCoords, 7);
-  assert.ok(Math.abs(one.bounds.south - 12.9121) < 1e-6 && Math.abs(one.bounds.east - 77.7011) < 1e-6);   // HSR to Marathahalli
+  assert.ok(Math.abs(one.bounds.south - 12.9121) < 1e-6 && Math.abs(one.bounds.east - 77.7011) < 1e-6); // HSR to Marathahalli
   const [{ id: emptyId }] = await db('portfolios').insert({ name: 'test-empty', source_filename: 'x.csv', row_count: 0 }).returning('id');
   created.push(emptyId);
   assert.equal((await (await fetch(`${base}/api/portfolios/${emptyId}`)).json()).bounds, null);
@@ -68,7 +69,12 @@ test('the name defaults to the filename without its extension', async () => {
 });
 
 test('bad headers and bad rows are 400s with details, and nothing is stored', async () => {
-  const mine = () => db('portfolios').where({ name: 'stores' }).count('* as n').first().then((r) => Number(r?.n));   // this suite's own rows: other suites delete theirs in parallel
+  const mine = () =>
+    db('portfolios')
+      .where({ name: 'stores' })
+      .count('* as n')
+      .first()
+      .then((r) => Number(r?.n)); // this suite's own rows: other suites delete theirs in parallel
   const before = await mine();
   const headers = await upload('store_name,address\nA,B');
   assert.equal(headers.status, 400);

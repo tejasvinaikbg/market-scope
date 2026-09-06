@@ -22,7 +22,10 @@ test('a good header maps every column to its index', () => {
 test('all missing required columns are reported at once', () => {
   const h = validateHeaders(['store_name', 'address']);
   assert.equal(h.ok, false);
-  assert.deepEqual(h.errors.map((e) => e.column), ['city', 'state', 'country', 'category']);
+  assert.deepEqual(
+    h.errors.map((e) => e.column),
+    ['city', 'state', 'country', 'category'],
+  );
 });
 
 test('unknown columns warn, do not fail; duplicates and a lone latitude fail', () => {
@@ -54,14 +57,20 @@ test('parseRow: blank coordinates mean "geocode later", not an error', () => {
 
 test('parseRow: short row, lone coordinate, out-of-range and non-numeric values', () => {
   const { columnIndex } = validateHeaders(good);
-  const short = parseRow(['A', 'B', 'C'], columnIndex, 3);                          // ragged row: fewer cells than headers
-  assert.deepEqual(short.issues.map((i) => i.column), ['state', 'country', 'category']);
+  const short = parseRow(['A', 'B', 'C'], columnIndex, 3); // ragged row: fewer cells than headers
+  assert.deepEqual(
+    short.issues.map((i) => i.column),
+    ['state', 'country', 'category'],
+  );
 
   const lone = parseRow(['A', 'B', 'C', 'D', 'E', 'F', '12.9', ''], columnIndex, 4);
   assert.equal(lone.issues[0]?.column, 'longitude');
 
   const range = parseRow(['A', 'B', 'C', 'D', 'E', 'F', '95', 'east'], columnIndex, 5);
-  assert.deepEqual(range.issues.map((i) => i.column), ['latitude', 'longitude']);
+  assert.deepEqual(
+    range.issues.map((i) => i.column),
+    ['latitude', 'longitude'],
+  );
   assert.equal(range.issues[0]?.row, 5);
 });
 

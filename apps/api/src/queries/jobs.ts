@@ -7,12 +7,25 @@ import { config } from '../config.ts';
 
 export type JobStatus = 'pending' | 'running' | 'done' | 'failed';
 export interface JobRow {
-  id: number; type: string; marketId: number | null; payload: Record<string, unknown>;
-  status: JobStatus; attempts: number; runAfter: Date; lastError: string | null;
+  id: number;
+  type: string;
+  marketId: number | null;
+  payload: Record<string, unknown>;
+  status: JobStatus;
+  attempts: number;
+  runAfter: Date;
+  lastError: string | null;
 }
 
 const toJob = (r: Record<string, any>): JobRow => ({
-  id: r.id, type: r.type, marketId: r.market_id, payload: r.payload, status: r.status, attempts: r.attempts, runAfter: r.run_after, lastError: r.last_error,
+  id: r.id,
+  type: r.type,
+  marketId: r.market_id,
+  payload: r.payload,
+  status: r.status,
+  attempts: r.attempts,
+  runAfter: r.run_after,
+  lastError: r.last_error,
 });
 
 export const jobsQueries = {
@@ -27,13 +40,16 @@ export const jobsQueries = {
    * not waited for. A job still 'running' after JOB_STALE_MINUTES belongs to a worker that died mid-run; it is due again.
    */
   async claim(k: Db = db, staleMinutes = config.JOB_STALE_MINUTES): Promise<JobRow | null> {
-    const { rows } = await k.raw(`
+    const { rows } = await k.raw(
+      `
       UPDATE jobs SET status = 'running', attempts = attempts + 1, updated_at = now()
        WHERE id = (SELECT id FROM jobs
                     WHERE (status = 'pending' AND run_after <= now())
                        OR (status = 'running' AND updated_at < now() - (? * interval '1 minute'))
                     ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
-       RETURNING *`, [staleMinutes]);
+       RETURNING *`,
+      [staleMinutes],
+    );
     return rows[0] ? toJob(rows[0]) : null;
   },
 
@@ -50,12 +66,14 @@ export const jobsQueries = {
 
   /** Record a failure: try again after `retryInMs` (pending, with a later run_after), or park it as failed when null. */
   async fail(id: number, error: string, retryInMs: number | null, k: Db = db): Promise<void> {
-    await k('jobs').where({ id }).update({
-      status: retryInMs == null ? 'failed' : 'pending',
-      last_error: error.slice(0, 1000),
-      run_after: retryInMs == null ? k.fn.now() : k.raw(`now() + (? * interval '1 millisecond')`, [retryInMs]),
-      updated_at: k.fn.now(),
-    });
+    await k('jobs')
+      .where({ id })
+      .update({
+        status: retryInMs == null ? 'failed' : 'pending',
+        last_error: error.slice(0, 1000),
+        run_after: retryInMs == null ? k.fn.now() : k.raw(`now() + (? * interval '1 millisecond')`, [retryInMs]),
+        updated_at: k.fn.now(),
+      });
   },
 
   async byId(id: number, k: Db = db): Promise<JobRow | null> {

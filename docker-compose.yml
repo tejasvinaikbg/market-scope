@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgis/postgis:16-3.4   # the Debian build has an arm64 image; alpine is amd64-only
+    image: postgis/postgis:16-3.4 # the Debian build has an arm64 image; alpine is amd64-only
     container_name: market-scope-db
     restart: unless-stopped
     environment:
@@ -8,11 +8,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
       POSTGRES_DB: ${POSTGRES_DB:?set in .env}
     ports:
-      - "${POSTGRES_PORT:?set in .env}:5432"
+      - '${POSTGRES_PORT:?set in .env}:5432'
     volumes:
       - db_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
       interval: 5s
       timeout: 30s
       retries: 10
@@ -22,17 +22,17 @@ services:
   # by `npm run db:test:up`, never pointed at by a server. The dev database above cannot see it, and vice versa.
   db-test:
     image: postgis/postgis:16-3.4
-    profiles: ["test"]
+    profiles: ['test']
     environment:
       POSTGRES_USER: ${POSTGRES_USER:?set in .env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
       POSTGRES_DB: ${POSTGRES_TEST_DB:?set in .env}
     ports:
-      - "${POSTGRES_TEST_PORT:?set in .env}:5432"
+      - '${POSTGRES_TEST_PORT:?set in .env}:5432'
     tmpfs:
       - /var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_TEST_DB}"]
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_TEST_DB}']
       interval: 2s
       timeout: 10s
       retries: 15
@@ -43,23 +43,23 @@ services:
   api:
     image: market-scope-api
     build: { context: ., dockerfile: apps/api/Dockerfile }
-    profiles: ["app"]
+    profiles: ['app']
     env_file: .env
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-      JOBS: "off"                                    # the worker below runs the queue
-      PORT: "4200"
+      JOBS: 'off' # the worker below runs the queue
+      PORT: '4200'
     ports:
-      - "${API_PORT:-4200}:4200"
+      - '${API_PORT:-4200}:4200'
     depends_on:
       db: { condition: service_healthy }
   worker:
-    image: market-scope-api                          # the same image as the api; only the command differs
-    profiles: ["app"]
+    image: market-scope-api # the same image as the api; only the command differs
+    profiles: ['app']
     env_file: .env
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
-    command: ["node", "src/worker.ts"]
+    command: ['node', 'src/worker.ts']
     depends_on:
       db: { condition: service_healthy }
   web:
@@ -68,11 +68,11 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}   # blank: the browser calls /api on this server, which forwards to the api service
-        API_URL: http://api:4200                       # the forward's target, compiled in at build time
-    profiles: ["app"]
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-} # blank: the browser calls /api on this server, which forwards to the api service
+        API_URL: http://api:4200 # the forward's target, compiled in at build time
+    profiles: ['app']
     ports:
-      - "${WEB_PORT:-3200}:3200"
+      - '${WEB_PORT:-3200}:3200'
     depends_on:
       - api
 

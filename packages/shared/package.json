@@ -8,7 +8,8 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json",
-    "test": "tsx --test \"test/**/*.test.ts\""
+    "test": "tsx --test \"test/**/*.test.ts\"",
+    "test:coverage": "c8 --src src --all --reporter=text-summary --reporter=lcov tsx --test \"test/**/*.test.ts\""
   },
   "devDependencies": {
     "@types/node": "^26.4.1",

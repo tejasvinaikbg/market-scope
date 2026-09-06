@@ -24,14 +24,22 @@ export default defineConfig({
   use: { baseURL: `http://localhost:${WEB_PORT}`, trace: 'retain-on-failure' },
   projects: [
     { name: 'desktop', use: { ...devices['Desktop Chrome'] } },
-    { name: 'phone', use: { ...devices['Pixel 7'] }, testMatch: /mobile\.spec\.ts/ },   // Chromium's phone emulation: one browser to install
+    { name: 'phone', use: { ...devices['Pixel 7'] }, testMatch: /mobile\.spec\.ts/ }, // Chromium's phone emulation: one browser to install
   ],
   webServer: [
     {
       // The database is prepared in the same command: Playwright starts servers before any global setup could run.
       command: 'node e2e/prepare-db.mts && node apps/api/src/server.ts',
       url: `http://localhost:${API_PORT}/api/health`,
-      env: { DATABASE_URL: E2E_DATABASE_URL, PORT: String(API_PORT), JOBS: 'on', GEOCODER: 'fixture', PLACES: 'fixture', LOG_LEVEL: 'warn', TILE_CACHE_HOURS: '0' },
+      env: {
+        DATABASE_URL: E2E_DATABASE_URL,
+        PORT: String(API_PORT),
+        JOBS: 'on',
+        GEOCODER: 'fixture',
+        PLACES: 'fixture',
+        LOG_LEVEL: 'warn',
+        TILE_CACHE_HOURS: '0',
+      },
       reuseExistingServer: false,
       timeout: 60_000,
     },

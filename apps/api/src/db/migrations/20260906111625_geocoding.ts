@@ -7,7 +7,7 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.alterTable('portfolio_stores', (t) => {
-    t.text('geocode_status');                                         // 'ok' | 'not_found' | 'error'; NULL if never attempted
+    t.text('geocode_status'); // 'ok' | 'not_found' | 'error'; NULL if never attempted
     t.timestamp('geocoded_at', { useTz: true });
     t.check("geocode_status IN ('ok', 'not_found', 'error')", [], 'portfolio_stores_geocode_status_check');
   });

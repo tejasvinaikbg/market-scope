@@ -10,22 +10,34 @@ export type PlacesProvider = 'overpass' | 'google';
 export type GeocoderProvider = 'nominatim' | 'google';
 export type MarketStatus = 'pending' | 'running' | 'ready' | 'partial' | 'failed';
 /** How far discovery has got: areas (tiles) to search, searched, and searched without success. */
-export interface MarketProgress { tiles: number; done: number; failed: number }
+export interface MarketProgress {
+  tiles: number;
+  done: number;
+  failed: number;
+}
 
 export interface MarketRow {
-  id: number; name: string;
-  portfolioId: number; portfolioName: string;
-  cityId: number; cityName: string;
-  boundary: Bbox; areaSqKm: number;
-  placesProvider: PlacesProvider; geocoderProvider: GeocoderProvider;
+  id: number;
+  name: string;
+  portfolioId: number;
+  portfolioName: string;
+  cityId: number;
+  cityName: string;
+  boundary: Bbox;
+  areaSqKm: number;
+  placesProvider: PlacesProvider;
+  geocoderProvider: GeocoderProvider;
   categories: Array<{ id: number; slug: string; name: string }>;
-  status: MarketStatus; error: string | null; startedAt: Date | null; completedAt: Date | null;
-  progress: MarketProgress | null;                      // null until discovery starts
-  geocoding: { total: number; done: number; failed: number };   // the portfolio's stores that needed locating, and how it went
-  placement: { inside: number; outside: number; unlocated: number };   // where the portfolio's stores sit for this market
-  matched: number;                                                     // how many of them were paired with a discovered store
-  busy: boolean;                                                       // a run is in flight: running, or a job queued for it — nothing may change it meanwhile
-  storeCount: number;                                   // discovered so far; grows while discovery runs
+  status: MarketStatus;
+  error: string | null;
+  startedAt: Date | null;
+  completedAt: Date | null;
+  progress: MarketProgress | null; // null until discovery starts
+  geocoding: { total: number; done: number; failed: number }; // the portfolio's stores that needed locating, and how it went
+  placement: { inside: number; outside: number; unlocated: number }; // where the portfolio's stores sit for this market
+  matched: number; // how many of them were paired with a discovered store
+  busy: boolean; // a run is in flight: running, or a job queued for it — nothing may change it meanwhile
+  storeCount: number; // discovered so far; grows while discovery runs
   createdAt: Date;
 }
 
@@ -52,17 +64,39 @@ const SELECT_MARKET = `
 
 // A raw pg row → the typed shape. The one place that knows this query's column names.
 const toMarket = (r: Record<string, any>): MarketRow => ({
-  id: r.id, name: r.name, portfolioId: r.portfolio_id, portfolioName: r.portfolio_name, cityId: r.city_id, cityName: r.city_name,
-  boundary: { south: r.south, west: r.west, north: r.north, east: r.east }, areaSqKm: Number(r.area_sq_km),
-  placesProvider: r.places_provider, geocoderProvider: r.geocoder_provider, categories: r.categories,
-  status: r.status, error: r.error, startedAt: r.started_at, completedAt: r.completed_at, progress: r.progress, storeCount: r.store_count,
+  id: r.id,
+  name: r.name,
+  portfolioId: r.portfolio_id,
+  portfolioName: r.portfolio_name,
+  cityId: r.city_id,
+  cityName: r.city_name,
+  boundary: { south: r.south, west: r.west, north: r.north, east: r.east },
+  areaSqKm: Number(r.area_sq_km),
+  placesProvider: r.places_provider,
+  geocoderProvider: r.geocoder_provider,
+  categories: r.categories,
+  status: r.status,
+  error: r.error,
+  startedAt: r.started_at,
+  completedAt: r.completed_at,
+  progress: r.progress,
+  storeCount: r.store_count,
   geocoding: { total: r.geo_total, done: r.geo_done, failed: r.geo_failed },
-  placement: { inside: r.placed_inside, outside: r.placed_outside, unlocated: r.placed_unlocated }, matched: r.matched, busy: r.busy, createdAt: r.created_at,
+  placement: { inside: r.placed_inside, outside: r.placed_outside, unlocated: r.placed_unlocated },
+  matched: r.matched,
+  busy: r.busy,
+  createdAt: r.created_at,
 });
 
 export interface NewMarket {
-  name: string; portfolioId: number; cityId: number; boundary: Bbox; areaSqKm: number;
-  placesProvider: PlacesProvider; geocoderProvider: GeocoderProvider; categoryIds: number[];
+  name: string;
+  portfolioId: number;
+  cityId: number;
+  boundary: Bbox;
+  areaSqKm: number;
+  placesProvider: PlacesProvider;
+  geocoderProvider: GeocoderProvider;
+  categoryIds: number[];
 }
 
 export const marketsQueries = {
@@ -75,11 +109,17 @@ export const marketsQueries = {
   /** The market row and its category rows; the caller wraps this in a transaction. */
   async insert(m: NewMarket, k: Db): Promise<number> {
     const b = m.boundary;
-    const [row] = await k('markets').insert({
-      name: m.name, portfolio_id: m.portfolioId, city_id: m.cityId, area_sq_km: m.areaSqKm,
-      places_provider: m.placesProvider, geocoder_provider: m.geocoderProvider,
-      boundary: k.raw('ST_MakeEnvelope(?, ?, ?, ?, 4326)', [b.west, b.south, b.east, b.north]),
-    }).returning('id');
+    const [row] = await k('markets')
+      .insert({
+        name: m.name,
+        portfolio_id: m.portfolioId,
+        city_id: m.cityId,
+        area_sq_km: m.areaSqKm,
+        places_provider: m.placesProvider,
+        geocoder_provider: m.geocoderProvider,
+        boundary: k.raw('ST_MakeEnvelope(?, ?, ?, ?, 4326)', [b.west, b.south, b.east, b.north]),
+      })
+      .returning('id');
     await k('market_categories').insert(m.categoryIds.map((category_id) => ({ market_id: row.id, category_id })));
     return row.id;
   },
@@ -87,11 +127,17 @@ export const marketsQueries = {
   /** A market's decisions rewritten in place: the row and its category rows. The caller wraps this in a transaction. */
   async update(id: number, m: NewMarket, k: Db): Promise<void> {
     const b = m.boundary;
-    await k('markets').where({ id }).update({
-      name: m.name, portfolio_id: m.portfolioId, city_id: m.cityId, area_sq_km: m.areaSqKm,
-      places_provider: m.placesProvider, geocoder_provider: m.geocoderProvider,
-      boundary: k.raw('ST_MakeEnvelope(?, ?, ?, ?, 4326)', [b.west, b.south, b.east, b.north]),
-    });
+    await k('markets')
+      .where({ id })
+      .update({
+        name: m.name,
+        portfolio_id: m.portfolioId,
+        city_id: m.cityId,
+        area_sq_km: m.areaSqKm,
+        places_provider: m.placesProvider,
+        geocoder_provider: m.geocoderProvider,
+        boundary: k.raw('ST_MakeEnvelope(?, ?, ?, ?, 4326)', [b.west, b.south, b.east, b.north]),
+      });
     await k('market_categories').where({ market_id: id }).del();
     await k('market_categories').insert(m.categoryIds.map((category_id) => ({ market_id: id, category_id })));
   },
@@ -108,13 +154,18 @@ export const marketsQueries = {
 
   /** The market's categories with their OSM search terms — what the places provider is asked for. */
   async categorySearches(marketId: number, k: Db = db): Promise<CategorySearch[]> {
-    const rows = await k('market_categories as mc').join('categories as c', 'c.id', 'mc.category_id')
-      .where('mc.market_id', marketId).orderBy('c.id').select('c.id', 'c.slug', 'c.osm_selectors');
+    const rows = await k('market_categories as mc')
+      .join('categories as c', 'c.id', 'mc.category_id')
+      .where('mc.market_id', marketId)
+      .orderBy('c.id')
+      .select('c.id', 'c.slug', 'c.osm_selectors');
     return rows.map((r) => ({ categoryId: r.id, slug: r.slug, selectors: r.osm_selectors }));
   },
 
   async setProgress(id: number, progress: MarketProgress, k: Db = db): Promise<void> {
-    await k('markets').where({ id }).update({ progress: JSON.stringify(progress) });
+    await k('markets')
+      .where({ id })
+      .update({ progress: JSON.stringify(progress) });
   },
 
   /** Back to the starting line for another run: queued, no error, no progress. Last run's rows stay until the run rewrites them. */
@@ -129,10 +180,13 @@ export const marketsQueries = {
 
   /** Status transitions stamp their own timestamps: running sets started_at, any terminal state sets completed_at. */
   async setStatus(id: number, status: MarketStatus, error: string | null = null, k: Db = db): Promise<void> {
-    await k('markets').where({ id }).update({
-      status, error,
-      started_at: k.raw(`CASE WHEN ? = 'running' THEN now() ELSE started_at END`, [status]),
-      completed_at: k.raw(`CASE WHEN ? IN ('ready', 'partial', 'failed') THEN now() ELSE completed_at END`, [status]),
-    });
+    await k('markets')
+      .where({ id })
+      .update({
+        status,
+        error,
+        started_at: k.raw(`CASE WHEN ? = 'running' THEN now() ELSE started_at END`, [status]),
+        completed_at: k.raw(`CASE WHEN ? IN ('ready', 'partial', 'failed') THEN now() ELSE completed_at END`, [status]),
+      });
   },
 };

@@ -26,15 +26,23 @@ export function buildApp(overrides: Partial<Pick<Config, 'RATE_LIMIT_PER_MINUTE'
   const settings = { ...config, ...overrides };
   const app = express();
   app.disable('x-powered-by');
-  app.set('trust proxy', settings.TRUST_PROXY);                          // behind a load balancer, the client IP is in X-Forwarded-For
-  app.use(helmet({ contentSecurityPolicy: false }));                     // the API serves JSON; Swagger UI at /api/docs needs inline scripts
+  app.set('trust proxy', settings.TRUST_PROXY); // behind a load balancer, the client IP is in X-Forwarded-For
+  app.use(helmet({ contentSecurityPolicy: false })); // the API serves JSON; Swagger UI at /api/docs needs inline scripts
   app.use(compression());
-  if (settings.CORS_ORIGIN) app.use(cors({ origin: settings.CORS_ORIGIN.split(',').map((o) => o.trim()) }));   // deployed: the web app's own domain
+  if (settings.CORS_ORIGIN) app.use(cors({ origin: settings.CORS_ORIGIN.split(',').map((o) => o.trim()) })); // deployed: the web app's own domain
   if (settings.RATE_LIMIT_PER_MINUTE > 0) {
-    app.use('/api', rateLimit({
-      windowMs: 60_000, limit: settings.RATE_LIMIT_PER_MINUTE, standardHeaders: 'draft-7', legacyHeaders: false,
-      handler: (_req, res) => { res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many requests; try again in a minute' } }); },   // our envelope, not the default text
-    }));
+    app.use(
+      '/api',
+      rateLimit({
+        windowMs: 60_000,
+        limit: settings.RATE_LIMIT_PER_MINUTE,
+        standardHeaders: 'draft-7',
+        legacyHeaders: false,
+        handler: (_req, res) => {
+          res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many requests; try again in a minute' } });
+        }, // our envelope, not the default text
+      }),
+    );
   }
   app.use(requestLogger);
   app.use(express.json({ limit: '1mb' }));

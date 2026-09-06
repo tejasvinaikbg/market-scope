@@ -7,6 +7,7 @@
     "worker": "tsx watch src/worker.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "LOG_LEVEL=silent tsx --test \"test/unit/**/*.test.ts\"",
+    "test:coverage": "LOG_LEVEL=silent c8 --src src --all --reporter=text-summary --reporter=lcov tsx --test \"test/unit/**/*.test.ts\"",
     "test:integration": "tsx test/integration.ts",
     "knex": "NODE_OPTIONS=--import=tsx knex --knexfile src/db/knexfile.ts",
     "migrate": "npm run knex -- migrate:latest",

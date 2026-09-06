@@ -5,7 +5,10 @@ import { db } from '../../src/db/knex.ts';
 
 const server = buildApp().listen(0);
 const base = `http://localhost:${(server.address() as { port: number }).port}`;
-after(async () => { server.close(); await db.destroy(); });
+after(async () => {
+  server.close();
+  await db.destroy();
+});
 
 test('locations tree contains the three seeded cities under their states', async () => {
   const { countries } = await (await fetch(`${base}/api/locations`)).json();

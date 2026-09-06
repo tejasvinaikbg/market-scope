@@ -18,8 +18,13 @@ import { providerUnavailable } from '../providers/availability.ts';
 import { jobsQueries } from '../queries/jobs.ts';
 
 export interface CreateMarketInput {
-  name?: string; portfolioId: number; cityId: number; categoryIds: number[]; boundary: Bbox;
-  placesProvider: PlacesProvider; geocoderProvider: GeocoderProvider;
+  name?: string;
+  portfolioId: number;
+  cityId: number;
+  categoryIds: number[];
+  boundary: Bbox;
+  placesProvider: PlacesProvider;
+  geocoderProvider: GeocoderProvider;
 }
 
 /** The validation ladder, shared by create and edit: what comes back is what a market row needs beyond the input. */
@@ -30,8 +35,10 @@ async function checkMarketInput(input: CreateMarketInput) {
 
   // 2. Size: PostGIS measures; the cap and the floor come from the shared constants. The measured value rides in details.
   const areaSqKm = await marketsQueries.areaSqKm(input.boundary);
-  if (areaSqKm > MAX_MARKET_AREA_SQ_KM) throw badRequest('AREA_TOO_LARGE', `Boundary is ${areaSqKm.toFixed(2)} km²; the cap is ${MAX_MARKET_AREA_SQ_KM} km²`, { areaSqKm });
-  if (areaSqKm < MIN_MARKET_AREA_SQ_KM) throw badRequest('AREA_TOO_SMALL', `Boundary is ${areaSqKm.toFixed(4)} km²; the minimum is ${MIN_MARKET_AREA_SQ_KM} km²`, { areaSqKm });
+  if (areaSqKm > MAX_MARKET_AREA_SQ_KM)
+    throw badRequest('AREA_TOO_LARGE', `Boundary is ${areaSqKm.toFixed(2)} km²; the cap is ${MAX_MARKET_AREA_SQ_KM} km²`, { areaSqKm });
+  if (areaSqKm < MIN_MARKET_AREA_SQ_KM)
+    throw badRequest('AREA_TOO_SMALL', `Boundary is ${areaSqKm.toFixed(4)} km²; the minimum is ${MIN_MARKET_AREA_SQ_KM} km²`, { areaSqKm });
 
   // 3. Providers: the screen greys out what cannot be used, but a request can be made by hand — refuse with the same reason.
   const unavailable = providerUnavailable('places', input.placesProvider) ?? providerUnavailable('geocoding', input.geocoderProvider);
@@ -50,8 +57,14 @@ async function checkMarketInput(input: CreateMarketInput) {
   // The name is optional on the screen (the design has no field for it), so it defaults to something readable.
   const name = input.name?.trim() || `${city.name} · ${portfolio.name}`;
   return {
-    name, portfolioId: input.portfolioId, cityId: input.cityId, boundary: input.boundary, areaSqKm,
-    placesProvider: input.placesProvider, geocoderProvider: input.geocoderProvider, categoryIds,
+    name,
+    portfolioId: input.portfolioId,
+    cityId: input.cityId,
+    boundary: input.boundary,
+    areaSqKm,
+    placesProvider: input.placesProvider,
+    geocoderProvider: input.geocoderProvider,
+    categoryIds,
   };
 }
 
@@ -109,7 +122,7 @@ export async function deleteMarket(id: number) {
 
 /** Everything the dashboard draws for one market: the filtered list, the unlocated portfolio stores, and the unfiltered totals. */
 export async function listMarketStores(id: number, filters: StoreFilters) {
-  await getMarket(id);                                                                 // 404 before any list work
+  await getMarket(id); // 404 before any list work
   const [stores, unlocated, counts] = await Promise.all([storesQueries.list(id, filters), storesQueries.unlocated(id), storesQueries.counts(id)]);
   return { stores, unlocated, counts };
 }

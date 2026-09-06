@@ -19,7 +19,11 @@ jest.mock('@/components/MarketMap', () => ({
     <div data-testid="map" data-selected={p.selectedId ?? ''}>
       {p.stores.map((s) => s.id).join(' ')}
       {/* a stand-in for a click on a badge */}
-      {p.stores.map((s) => <button key={s.id} type="button" onClick={() => p.onSelect(s.id)}>badge {s.id}</button>)}
+      {p.stores.map((s) => (
+        <button key={s.id} type="button" onClick={() => p.onSelect(s.id)}>
+          badge {s.id}
+        </button>
+      ))}
     </div>
   ),
 }));
@@ -27,19 +31,82 @@ jest.mock('@/components/MarketMap', () => ({
 const supermarket = { id: 1, slug: 'supermarket', name: 'Supermarket' };
 const pharmacy = { id: 2, slug: 'pharmacy', name: 'Pharmacy' };
 const base = {
-  id: 7, name: 'Bengaluru · sample', portfolioId: 1, portfolioName: 'sample', cityId: 1, cityName: 'Bengaluru',
-  boundary: { south: 12.92, west: 77.6, north: 12.956, east: 77.646 }, areaSqKm: 19.8797, placesProvider: 'overpass', geocoderProvider: 'nominatim',
-  categories: [supermarket, pharmacy], createdAt: '',
-  status: 'pending', error: null, startedAt: null, completedAt: null, storeCount: 0, progress: null, geocoding: { total: 3, done: 0, failed: 0 }, placement: { inside: 0, outside: 0, unlocated: 0 }, matched: 0, busy: true,
+  id: 7,
+  name: 'Bengaluru · sample',
+  portfolioId: 1,
+  portfolioName: 'sample',
+  cityId: 1,
+  cityName: 'Bengaluru',
+  boundary: { south: 12.92, west: 77.6, north: 12.956, east: 77.646 },
+  areaSqKm: 19.8797,
+  placesProvider: 'overpass',
+  geocoderProvider: 'nominatim',
+  categories: [supermarket, pharmacy],
+  createdAt: '',
+  status: 'pending',
+  error: null,
+  startedAt: null,
+  completedAt: null,
+  storeCount: 0,
+  progress: null,
+  geocoding: { total: 3, done: 0, failed: 0 },
+  placement: { inside: 0, outside: 0, unlocated: 0 },
+  matched: 0,
+  busy: true,
 };
 const ready = {
-  status: 'ready', busy: false, storeCount: 2, progress: { tiles: 4, done: 4, failed: 0 }, completedAt: '2026-09-06T10:00:00Z',
-  geocoding: { total: 3, done: 2, failed: 1 }, placement: { inside: 1, outside: 1, unlocated: 1 },
+  status: 'ready',
+  busy: false,
+  storeCount: 2,
+  progress: { tiles: 4, done: 4, failed: 0 },
+  completedAt: '2026-09-06T10:00:00Z',
+  geocoding: { total: 3, done: 2, failed: 1 },
+  placement: { inside: 1, outside: 1, unlocated: 1 },
 };
-const fresh = { id: 'd:1', layer: 'discovered', name: 'FreshMart Koramangala', category: supermarket, lat: 12.93, lng: 77.62, address: '80 Feet Road', source: 'overpass', match: null };
-const apollo = { id: 'd:2', layer: 'discovered', name: 'Apollo Pharmacy', category: pharmacy, lat: 12.94, lng: 77.63, address: null, source: 'overpass', match: null };
-const inside = { id: 'p:1', layer: 'portfolio_inside', name: 'Our Koramangala store', category: supermarket, lat: 12.935, lng: 77.625, address: '5th Block', source: 'uploaded', match: null };
-const outside = { id: 'p:2', layer: 'portfolio_outside', name: 'Our Whitefield store', category: supermarket, lat: 12.97, lng: 77.75, address: 'ITPL Main Road', source: 'geocoded', match: null };
+const fresh = {
+  id: 'd:1',
+  layer: 'discovered',
+  name: 'FreshMart Koramangala',
+  category: supermarket,
+  lat: 12.93,
+  lng: 77.62,
+  address: '80 Feet Road',
+  source: 'overpass',
+  match: null,
+};
+const apollo = {
+  id: 'd:2',
+  layer: 'discovered',
+  name: 'Apollo Pharmacy',
+  category: pharmacy,
+  lat: 12.94,
+  lng: 77.63,
+  address: null,
+  source: 'overpass',
+  match: null,
+};
+const inside = {
+  id: 'p:1',
+  layer: 'portfolio_inside',
+  name: 'Our Koramangala store',
+  category: supermarket,
+  lat: 12.935,
+  lng: 77.625,
+  address: '5th Block',
+  source: 'uploaded',
+  match: null,
+};
+const outside = {
+  id: 'p:2',
+  layer: 'portfolio_outside',
+  name: 'Our Whitefield store',
+  category: supermarket,
+  lat: 12.97,
+  lng: 77.75,
+  address: 'ITPL Main Road',
+  source: 'geocoded',
+  match: null,
+};
 const hsr = { id: 'p:3', name: 'Our HSR store', category: supermarket, address: '27th Main', reason: 'not_found' };
 const counts = { discovered: 2, portfolioInside: 1, portfolioOutside: 1, portfolioUnlocated: 1, matched: 0 };
 const all = { stores: [fresh, apollo, inside, outside], unlocated: [hsr], counts };
@@ -47,7 +114,10 @@ const none = { stores: [], unlocated: [], counts: { discovered: 0, portfolioInsi
 
 /** The market as given, and the stores endpoint answering per query string; a filter the test did not list fails loudly. */
 const withMarket = (overrides: Record<string, unknown>, stores: Record<string, unknown> = {}) =>
-  mockApi({ 'GET /api/markets/7': { body: { ...base, ...overrides } }, ...Object.fromEntries(Object.entries(stores).map(([qs, body]) => [`GET /api/markets/7/stores${qs}`, { body }])) });
+  mockApi({
+    'GET /api/markets/7': { body: { ...base, ...overrides } },
+    ...Object.fromEntries(Object.entries(stores).map(([qs, body]) => [`GET /api/markets/7/stores${qs}`, { body }])),
+  });
 
 test('shows the market as the server stored it, queued: no totals, no controls yet', async () => {
   withMarket({});
@@ -62,7 +132,10 @@ test('shows the market as the server stored it, queued: no totals, no controls y
 });
 
 test('running shows progress, the totals so far, and the stores found so far', async () => {
-  withMarket({ status: 'running', busy: true, storeCount: 2, progress: { tiles: 4, done: 2, failed: 0 } }, { '': { stores: [fresh, apollo], unlocated: [], counts: { ...counts, portfolioInside: 0, portfolioOutside: 0, portfolioUnlocated: 0 } } });
+  withMarket(
+    { status: 'running', busy: true, storeCount: 2, progress: { tiles: 4, done: 2, failed: 0 } },
+    { '': { stores: [fresh, apollo], unlocated: [], counts: { ...counts, portfolioInside: 0, portfolioOutside: 0, portfolioUnlocated: 0 } } },
+  );
   renderApp(<Page />);
   expect(await screen.findByRole('status')).toHaveTextContent('Discovering stores… 2 of 4 areas searched · 2 found so far');
   expect(await screen.findByText('FreshMart Koramangala')).toBeInTheDocument();
@@ -78,10 +151,15 @@ test('while the portfolio is being located, the page says so before discovery st
 test('ready, partial and failed each say what happened', async () => {
   withMarket({ ...ready, storeCount: 71, placement: { inside: 1, outside: 8, unlocated: 1 } }, { '': none });
   const first = renderApp(<Page />);
-  expect(await screen.findByRole('status')).toHaveTextContent('71 stores discovered across 4 areas. 2 of 3 of your stores located from their address, 1 not found. 1 of your 10 stores inside the boundary, 8 outside, 1 without a location.');
+  expect(await screen.findByRole('status')).toHaveTextContent(
+    '71 stores discovered across 4 areas. 2 of 3 of your stores located from their address, 1 not found. 1 of your 10 stores inside the boundary, 8 outside, 1 without a location.',
+  );
   first.unmount();
 
-  withMarket({ status: 'partial', busy: false, storeCount: 50, progress: { tiles: 4, done: 4, failed: 1 }, error: 'tile 2/4: overpass 504 from https://a/' }, { '': none });
+  withMarket(
+    { status: 'partial', busy: false, storeCount: 50, progress: { tiles: 4, done: 4, failed: 1 }, error: 'tile 2/4: overpass 504 from https://a/' },
+    { '': none },
+  );
   const second = renderApp(<Page />);
   expect(await screen.findByRole('status')).toHaveTextContent('50 stores discovered; 1 of 4 areas could not be searched.');
   expect(screen.getByText('tile 2/4: overpass 504 from https://a/')).toBeInTheDocument();
@@ -111,7 +189,7 @@ test('ready: totals, the list with its tags, the stores off the map with their r
   expect(row).toHaveTextContent('Supermarket · ITPL Main Road');
   expect(row).toHaveTextContent('Portfolio · outside');
   expect(screen.getByRole('button', { name: /Apollo Pharmacy/ })).toHaveTextContent('Pharmacy');
-  expect(screen.getByRole('button', { name: /Apollo Pharmacy/ }).querySelector('svg')).toHaveAttribute('aria-hidden', 'true');   // the category's icon, decoration beside its name
+  expect(screen.getByRole('button', { name: /Apollo Pharmacy/ }).querySelector('svg')).toHaveAttribute('aria-hidden', 'true'); // the category's icon, decoration beside its name
   // the store with no location is listed apart, with the reason, and never reaches the map
   expect(screen.getByText('Not on the map · 1')).toBeInTheDocument();
   expect(screen.getByText('Supermarket · 27th Main · address not found')).toBeInTheDocument();
@@ -135,7 +213,11 @@ test('turning a layer off asks the API for the others; the list, the map and the
 });
 
 test('the search and a category chip narrow the list through the API', async () => {
-  withMarket(ready, { '': all, '?q=apollo': { stores: [apollo], unlocated: [hsr], counts }, '?categories=pharmacy&q=apollo': { stores: [apollo], unlocated: [hsr], counts } });
+  withMarket(ready, {
+    '': all,
+    '?q=apollo': { stores: [apollo], unlocated: [hsr], counts },
+    '?categories=pharmacy&q=apollo': { stores: [apollo], unlocated: [hsr], counts },
+  });
   renderApp(<Page />);
   await userEvent.type(await screen.findByRole('searchbox', { name: 'Search stores by name' }), 'apollo');
   expect(await screen.findByText('1 store shown · 4 in this market')).toBeInTheDocument();
@@ -156,7 +238,12 @@ test('nothing matching says so, and clearing the filters brings everything back'
 });
 
 test('with every layer off nothing is asked for, and the page says why the list is empty', async () => {
-  withMarket(ready, { '': all, '?layers=portfolio_inside,portfolio_outside,matched': { stores: [inside, outside], unlocated: [hsr], counts }, '?layers=portfolio_outside,matched': { stores: [outside], unlocated: [hsr], counts }, '?layers=matched': { stores: [], unlocated: [hsr], counts } });
+  withMarket(ready, {
+    '': all,
+    '?layers=portfolio_inside,portfolio_outside,matched': { stores: [inside, outside], unlocated: [hsr], counts },
+    '?layers=portfolio_outside,matched': { stores: [outside], unlocated: [hsr], counts },
+    '?layers=matched': { stores: [], unlocated: [hsr], counts },
+  });
   renderApp(<Page />);
   const chips = within(await screen.findByText('Layers').then((el) => el.parentElement!));
   for (const name of ['Discovered', 'Portfolio inside', 'Portfolio outside', 'Matched ≤150 m']) await userEvent.click(chips.getByRole('button', { name }));
@@ -188,34 +275,43 @@ test('a store picked on the map is marked in the list, and only one store is eve
   expect(screen.getByTestId('map')).toHaveAttribute('data-selected', 'p:1');
 });
 
-
 test('a run that found nothing says so and suggests what to change', async () => {
   withMarket({ ...ready, storeCount: 0, placement: { inside: 0, outside: 0, unlocated: 0 }, geocoding: { total: 0, done: 0, failed: 0 } }, { '': none });
   renderApp(<Page />);
-  expect(await screen.findByText('Nothing was found for Supermarket, Pharmacy inside this boundary. Try a larger boundary or other categories.')).toBeInTheDocument();
+  expect(
+    await screen.findByText('Nothing was found for Supermarket, Pharmacy inside this boundary. Try a larger boundary or other categories.'),
+  ).toBeInTheDocument();
   expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
 });
 
-test('the open market becomes the session\'s market, so the stepper names it', async () => {
+test("the open market becomes the session's market, so the stepper names it", async () => {
   withMarket(ready, { '': all });
-  renderApp(<><Stepper /><Page /></>);
+  renderApp(
+    <>
+      <Stepper />
+      <Page />
+    </>,
+  );
   expect(await screen.findByText('Bengaluru · sample · 19.9 km²')).toBeInTheDocument();
   expect(screen.getByRole('link', { name: /Market dashboard/ })).toHaveAttribute('href', '/dashboard/7');
 });
 
 test('a store that found its twin: the fifth total, the sentence, the tag with the distance, and the chip that selects the pairs', async () => {
   const paired = { ...inside, match: { id: 'd:1', name: 'FreshMart Koramangala', distanceM: 127 } };
-  const alsoPaired = { ...outside, match: { id: 'd:1', name: 'FreshMart Koramangala', distanceM: 140 } };   // two of yours, one twin
+  const alsoPaired = { ...outside, match: { id: 'd:1', name: 'FreshMart Koramangala', distanceM: 140 } }; // two of yours, one twin
   const withPair = { stores: [fresh, apollo, paired, alsoPaired], unlocated: [hsr], counts: { ...counts, matched: 2 } };
-  withMarket({ ...ready, matched: 2 }, { '': withPair, '?layers=matched': { stores: [paired, alsoPaired], unlocated: [hsr], counts: { ...counts, matched: 2 } } });
+  withMarket(
+    { ...ready, matched: 2 },
+    { '': withPair, '?layers=matched': { stores: [paired, alsoPaired], unlocated: [hsr], counts: { ...counts, matched: 2 } } },
+  );
   renderApp(<Page />);
   expect(await screen.findByRole('status')).toHaveTextContent('2 of them are a discovered store within 150 m.');
   expect(screen.getAllByRole('definition').map((d) => d.textContent)).toEqual(['2', '1', '1', '1', '2']);
   const row = screen.getByRole('button', { name: /^Our Koramangala store/ });
   expect(row).toHaveTextContent('Portfolio · inside');
-  expect(row).toHaveTextContent('Matched · FreshMart Koramangala · 127 m');                          // the twin, by name, and the distance
+  expect(row).toHaveTextContent('Matched · FreshMart Koramangala · 127 m'); // the twin, by name, and the distance
   expect(screen.getByRole('button', { name: /^Our Whitefield store/ })).toHaveTextContent('Matched · FreshMart Koramangala · 140 m');
-  const twin = screen.getByRole('button', { name: /^FreshMart Koramangala/ });                        // and from the other side, both of them
+  const twin = screen.getByRole('button', { name: /^FreshMart Koramangala/ }); // and from the other side, both of them
   expect(twin).toHaveTextContent('Yours · Our Koramangala store, Our Whitefield store');
   expect(screen.getByRole('button', { name: /^Apollo Pharmacy/ })).not.toHaveTextContent('Yours');
   // only the pairs: every other chip off
@@ -227,12 +323,16 @@ test('a store that found its twin: the fifth total, the sentence, the tag with t
 });
 
 test('a finished market can be run again: the button posts, and the market comes back queued', async () => {
-  const spy = mockApi({ 'GET /api/markets/7': { body: { ...base, ...ready } }, 'GET /api/markets/7/stores': { body: all }, 'POST /api/markets/7/runs': { status: 202, body: { ...base, ...ready, status: 'pending', busy: true, progress: null } } });
+  const spy = mockApi({
+    'GET /api/markets/7': { body: { ...base, ...ready } },
+    'GET /api/markets/7/stores': { body: all },
+    'POST /api/markets/7/runs': { status: 202, body: { ...base, ...ready, status: 'pending', busy: true, progress: null } },
+  });
   renderApp(<Page />);
   await userEvent.click(await screen.findByRole('button', { name: /Run discovery again/ }));
   expect(await screen.findByRole('status')).toHaveTextContent('Discovery is queued');
   expect(spy.mock.calls.some(([url, init]) => String(url).endsWith('/api/markets/7/runs') && init?.method === 'POST')).toBe(true);
-  expect(screen.queryByRole('button', { name: /Run discovery again/ })).not.toBeInTheDocument();   // not while it is queued
+  expect(screen.queryByRole('button', { name: /Run discovery again/ })).not.toBeInTheDocument(); // not while it is queued
 });
 
 test('a finished market offers its edit, which is the setup screen with the market in the address', async () => {
@@ -251,7 +351,11 @@ test('while a run is in flight there is no run-again and no delete', async () =>
 });
 
 test('delete asks twice, then removes the market and goes back to the list', async () => {
-  const spy = mockApi({ 'GET /api/markets/7': { body: { ...base, ...ready } }, 'GET /api/markets/7/stores': { body: all }, 'DELETE /api/markets/7': { status: 204, body: undefined } });
+  const spy = mockApi({
+    'GET /api/markets/7': { body: { ...base, ...ready } },
+    'GET /api/markets/7/stores': { body: all },
+    'DELETE /api/markets/7': { status: 204, body: undefined },
+  });
   renderApp(<Page />);
   await userEvent.click(await screen.findByRole('button', { name: 'Delete this market' }));
   const dialog = screen.getByRole('alertdialog', { name: 'Delete this market?' });

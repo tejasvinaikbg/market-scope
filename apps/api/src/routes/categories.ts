@@ -12,22 +12,23 @@ const Category = z.object({ id: z.number(), slug: z.string(), name: z.string() }
 registry.registerPath({
   method: 'get',
   path: '/api/categories',
-  tags: ['categories'], summary: 'Seeded store categories',
+  tags: ['categories'],
+  summary: 'Seeded store categories',
   responses: {
     200: {
       description: 'OK',
       content: {
-        'application/json':
-        { schema: z.array(Category) }
-      }
+        'application/json': { schema: z.array(Category) },
+      },
     },
-    ...errorResponses(500)
-  }
+    ...errorResponses(500),
+  },
 });
 
 export function categoriesRouter() {
   const router = Router();
-  router.get('/categories', cacheFor(3600), async (_req, res) => {              // seeded data: an hour is conservative
+  router.get('/categories', cacheFor(3600), async (_req, res) => {
+    // seeded data: an hour is conservative
     res.json((await categoriesQueries.list()).map(({ id, slug, name }) => ({ id, slug, name })));
   });
   return router;

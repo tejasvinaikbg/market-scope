@@ -24,7 +24,13 @@ async function connectWhenReady(connectionString: string): Promise<pg.Client> {
   let lastError: unknown;
   for (let attempt = 0; attempt < 30; attempt++) {
     const client = new pg.Client({ connectionString });
-    try { await client.connect(); return client; } catch (err) { lastError = err; await new Promise((r) => setTimeout(r, 1000)); }
+    try {
+      await client.connect();
+      return client;
+    } catch (err) {
+      lastError = err;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
   }
   throw new Error(`cannot reach the test database at ${new URL(connectionString).host} (${(lastError as Error).message}); start it with npm run db:test:up`);
 }
@@ -33,8 +39,8 @@ async function connectWhenReady(connectionString: string): Promise<pg.Client> {
 export async function prepareTestDatabase(url: string): Promise<void> {
   const name = decodeURIComponent(new URL(url).pathname.slice(1));
   const admin = new URL(url);
-  admin.pathname = '/postgres';                                            // the maintenance database every server has
-  const client = await connectWhenReady(admin.href);                       // the container may have started a moment ago
+  admin.pathname = '/postgres'; // the maintenance database every server has
+  const client = await connectWhenReady(admin.href); // the container may have started a moment ago
   try {
     const { rowCount } = await client.query('SELECT 1 FROM pg_database WHERE datname = $1', [name]);
     if (!rowCount) await client.query(`CREATE DATABASE ${client.escapeIdentifier(name)}`);

@@ -3,12 +3,12 @@
  */
 import { join } from 'node:path';
 import type { Knex } from 'knex';
-import { config } from '../config.ts'
+import { config } from '../config.ts';
 
 const knexConfig: Knex.Config = {
   client: 'pg',
   connection: config.DATABASE_URL,
-  pool: { min: 0, max: config.DB_POOL_MAX },   // per process; behind a pooler this can go up
+  pool: { min: 0, max: config.DB_POOL_MAX }, // per process; behind a pooler this can go up
   migrations: {
     directory: join(import.meta.dirname, 'migrations'),
     extension: 'ts',
@@ -18,8 +18,8 @@ const knexConfig: Knex.Config = {
   seeds: {
     directory: join(import.meta.dirname, 'seeds'),
     extension: 'ts',
-    loadExtensions: ['.ts']
-  }
-}
+    loadExtensions: ['.ts'],
+  },
+};
 
-export default knexConfig
+export default knexConfig;

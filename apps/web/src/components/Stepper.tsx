@@ -13,27 +13,38 @@ const STEPS = [
 
 export function Stepper() {
   const path = usePathname();
-  const { portfolio } = useCurrentPortfolio();                    // null until this session uploads one
-  const { market } = useCurrentMarket();                          // null until this session creates one
+  const { portfolio } = useCurrentPortfolio(); // null until this session uploads one
+  const { market } = useCurrentMarket(); // null until this session creates one
 
   // The captions say where the user stands, not what the page is called.
   const hint = (href: string) =>
-    href === '/' ? (portfolio ? `${portfolio.name} · ${portfolio.rowCount} stores` : 'no file yet')
-      : href === '/setup' ? 'choose a city and categories'
-        : market ? `${market.name} · ${market.areaSqKm.toFixed(1)} km²` : 'create the market first';
+    href === '/'
+      ? portfolio
+        ? `${portfolio.name} · ${portfolio.rowCount} stores`
+        : 'no file yet'
+      : href === '/setup'
+        ? 'choose a city and categories'
+        : market
+          ? `${market.name} · ${market.areaSqKm.toFixed(1)} km²`
+          : 'create the market first';
   // Step 03 links to the market this session created; the bare /dashboard shows the "no market yet" notice.
   const target = (href: string) => (href === '/dashboard' && market ? `/dashboard/${market.id}` : href);
 
   return (
     <nav className="grid grid-cols-3 border-b border-line bg-panel">
       {STEPS.map(({ href, n, title, Icon }) => {
-        const active = href === '/' ? path === '/' : path.startsWith(href);   // /dashboard/7 lights up step 03
+        const active = href === '/' ? path === '/' : path.startsWith(href); // /dashboard/7 lights up step 03
         return (
-          <Link key={href} href={target(href)}
-            className={`border-r border-line px-3 py-2.5 last:border-r-0 md:px-6 md:py-3 ${active ? 'bg-surface border-b-2 border-b-accent' : ''}`}>
+          <Link
+            key={href}
+            href={target(href)}
+            className={`border-r border-line px-3 py-2.5 last:border-r-0 md:px-6 md:py-3 ${active ? 'bg-surface border-b-2 border-b-accent' : ''}`}
+          >
             <div className="caption">{n}</div>
-            <div className={`flex items-center gap-2 text-sm font-semibold md:text-base ${active ? 'text-fg' : 'text-muted'}`}><Icon size={16} /> {title}</div>
-            <div className="hidden text-xs text-muted md:block">{hint(href)}</div>   {/* the hint is decoration on a phone */}
+            <div className={`flex items-center gap-2 text-sm font-semibold md:text-base ${active ? 'text-fg' : 'text-muted'}`}>
+              <Icon size={16} /> {title}
+            </div>
+            <div className="hidden text-xs text-muted md:block">{hint(href)}</div> {/* the hint is decoration on a phone */}
           </Link>
         );
       })}

@@ -5,7 +5,11 @@
  */
 import type { Bbox, LatLng } from '@market-scope/shared';
 
-export interface PlaceBounds { bbox: Bbox; centre: LatLng; displayName: string }
+export interface PlaceBounds {
+  bbox: Bbox;
+  centre: LatLng;
+  displayName: string;
+}
 
 export interface Geocoder {
   lookupBounds(query: string): Promise<PlaceBounds | null>;

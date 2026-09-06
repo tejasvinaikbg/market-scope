@@ -23,4 +23,3 @@ Things that are wrong or surprising today, with what to expect and what would fi
   drawn on them uses a fixed light palette.
 - **Markets created before the job queue existed** (a development artefact) show "queued" forever. They are not busy,
   so they can be run again, edited or deleted.
-- **No linting or formatting tool** is configured; conventions are enforced by review. On the [roadmap](ROADMAP.md).

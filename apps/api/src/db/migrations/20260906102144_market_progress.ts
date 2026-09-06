@@ -6,7 +6,7 @@ import type { Knex } from 'knex';
 
 export async function up(knex: Knex): Promise<void> {
   await knex.schema.alterTable('markets', (t) => {
-    t.jsonb('progress');   // null until discovery starts
+    t.jsonb('progress'); // null until discovery starts
   });
 }
 

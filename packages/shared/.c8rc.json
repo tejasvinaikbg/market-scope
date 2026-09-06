@@ -1,0 +1,4 @@
+{
+  "exclude": ["test/**", "**/*.d.ts", "src/db/migrations/**", "src/db/seeds/**", "src/server.ts", "src/worker.ts"],
+  "extension": [".ts"]
+}

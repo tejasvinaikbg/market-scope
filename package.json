@@ -21,14 +21,27 @@
     "migrate:make": "npm run migrate:make --workspace apps/api --",
     "seed:make": "npm run seed:make --workspace apps/api --",
     "seed:run": "npm run seed:run --workspace apps/api",
+    "lint": "eslint . && prettier --check .",
+    "lint:fix": "eslint . --fix && prettier --write .",
+    "format": "prettier --write .",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
+    "test:coverage": "npm run test:coverage --workspaces --if-present",
     "test:integration": "npm run db:test:up && npm run test:integration -w apps/api",
     "test:e2e": "npm run db:test:up && playwright test"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.5",
     "@playwright/test": "^1.63.0",
+    "c8": "^12.0.0",
     "concurrently": "^10.0.5",
-    "dotenv": "^17.4.2"
+    "dotenv": "^17.4.2",
+    "eslint": "^9.39.5",
+    "eslint-config-next": "^16.3.4",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.12.0",
+    "prettier": "^3.9.6",
+    "typescript-eslint": "^8.69.0"
   }
 }

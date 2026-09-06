@@ -14,7 +14,12 @@ function FakeUpload() {
 }
 
 test('the caption names the session portfolio once there is one', async () => {
-  renderApp(<><Stepper /><FakeUpload /></>);
+  renderApp(
+    <>
+      <Stepper />
+      <FakeUpload />
+    </>,
+  );
   expect(screen.getByText('no file yet')).toBeInTheDocument();
   await userEvent.click(screen.getByText('upload'));
   expect(screen.getByText('sample · 10 stores')).toBeInTheDocument();
@@ -33,7 +38,12 @@ function FakeCreate() {
 }
 
 test('once a market exists, step 03 names it and links to it', async () => {
-  renderApp(<><Stepper /><FakeCreate /></>);
+  renderApp(
+    <>
+      <Stepper />
+      <FakeCreate />
+    </>,
+  );
   expect(screen.getByText('create the market first')).toBeInTheDocument();
   expect(screen.getByText('Market dashboard').closest('a')).toHaveAttribute('href', '/dashboard');
   await userEvent.click(screen.getByText('create'));

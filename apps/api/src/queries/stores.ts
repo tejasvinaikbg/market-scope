@@ -9,20 +9,36 @@ import { db, type Db } from '../db/knex.ts';
 
 export type StoreLayer = 'discovered' | 'portfolio_inside' | 'portfolio_outside';
 export interface StoreRow {
-  id: string;                          // 'd:<discovered id>' or 'p:<portfolio store id>' — one list, two tables
+  id: string; // 'd:<discovered id>' or 'p:<portfolio store id>' — one list, two tables
   layer: StoreLayer;
   name: string;
-  category: { id: number; slug: string; name: string } | null;   // null for a portfolio store whose category matched nothing seeded
+  category: { id: number; slug: string; name: string } | null; // null for a portfolio store whose category matched nothing seeded
   lat: number;
   lng: number;
   address: string | null;
-  source: string;                      // 'overpass' | 'google' | 'uploaded' | 'geocoded'
-  match: { id: string; name: string; distanceM: number } | null;   // the discovered store this portfolio store is, when one was found
+  source: string; // 'overpass' | 'google' | 'uploaded' | 'geocoded'
+  match: { id: string; name: string; distanceM: number } | null; // the discovered store this portfolio store is, when one was found
 }
-export type LayerFilter = StoreLayer | 'matched';   // 'matched' is not a layer of its own: it is the portfolio rows that found a partner
-export interface UnlocatedRow { id: string; name: string; category: StoreRow['category']; address: string | null; reason: string | null }
-export interface StoreFilters { layers?: LayerFilter[]; categories?: string[]; q?: string }
-export interface StoreCounts { discovered: number; portfolioInside: number; portfolioOutside: number; portfolioUnlocated: number; matched: number }
+export type LayerFilter = StoreLayer | 'matched'; // 'matched' is not a layer of its own: it is the portfolio rows that found a partner
+export interface UnlocatedRow {
+  id: string;
+  name: string;
+  category: StoreRow['category'];
+  address: string | null;
+  reason: string | null;
+}
+export interface StoreFilters {
+  layers?: LayerFilter[];
+  categories?: string[];
+  q?: string;
+}
+export interface StoreCounts {
+  discovered: number;
+  portfolioInside: number;
+  portfolioOutside: number;
+  portfolioUnlocated: number;
+  matched: number;
+}
 
 // Both tables as the same columns; the UNION is what lets one WHERE and one ORDER BY serve the list.
 const STORES = `
@@ -42,9 +58,14 @@ const STORES = `
    WHERE p.market_id = :marketId AND p.placement IN ('inside', 'outside')`;
 
 const toStore = (r: Record<string, any>): StoreRow => ({
-  id: r.id, layer: r.layer, name: r.name,
+  id: r.id,
+  layer: r.layer,
+  name: r.name,
   category: r.category_id == null ? null : { id: r.category_id, slug: r.category_slug, name: r.category_name },
-  lat: r.lat, lng: r.lng, address: r.address, source: r.source,
+  lat: r.lat,
+  lng: r.lng,
+  address: r.address,
+  source: r.source,
   match: r.match_id == null ? null : { id: r.match_id, name: r.match_name, distanceM: Math.round(r.match_distance_m) },
 });
 
@@ -57,38 +78,53 @@ export const storesQueries = {
       // 'matched' cuts across the layers: it is asked for beside them, never instead of them.
       const layers = f.layers.filter((l) => l !== 'matched');
       const parts: string[] = [];
-      if (layers.length) { parts.push('t.layer = ANY(:layers)'); bindings.layers = layers; }
+      if (layers.length) {
+        parts.push('t.layer = ANY(:layers)');
+        bindings.layers = layers;
+      }
       if (f.layers.includes('matched')) parts.push('t.match_id IS NOT NULL');
       where.push(`(${parts.join(' OR ')})`);
     }
-    if (f.categories?.length) { where.push('t.category_slug = ANY(:categories)'); bindings.categories = f.categories; }
-    if (f.q?.trim()) { where.push('t.name ILIKE :q'); bindings.q = `%${f.q.trim()}%`; }
-    const { rows } = await k.raw(
-      `SELECT * FROM (${STORES}) t ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY t.layer, t.name`, bindings);
+    if (f.categories?.length) {
+      where.push('t.category_slug = ANY(:categories)');
+      bindings.categories = f.categories;
+    }
+    if (f.q?.trim()) {
+      where.push('t.name ILIKE :q');
+      bindings.q = `%${f.q.trim()}%`;
+    }
+    const { rows } = await k.raw(`SELECT * FROM (${STORES}) t ${where.length ? 'WHERE ' + where.join(' AND ') : ''} ORDER BY t.layer, t.name`, bindings);
     return rows.map(toStore);
   },
 
   /** Portfolio stores with no point: on the list, not on the map, with the reason the geocoder gave. */
   async unlocated(marketId: number, k: Db = db): Promise<UnlocatedRow[]> {
-    const rows = await k('market_portfolio_stores as p').join('portfolio_stores as s', 's.id', 'p.portfolio_store_id')
+    const rows = await k('market_portfolio_stores as p')
+      .join('portfolio_stores as s', 's.id', 'p.portfolio_store_id')
       .leftJoin('categories as c', 'c.id', 's.category_id')
       .where({ 'p.market_id': marketId, 'p.placement': 'unlocated' })
       .select('s.id', 's.store_name', 's.address', 's.geocode_status', 'c.id as category_id', 'c.slug as category_slug', 'c.name as category_name')
       .orderBy('s.store_name');
     return rows.map((r) => ({
-      id: `p:${r.id}`, name: r.store_name, address: r.address, reason: r.geocode_status,
-      category: r.category_id == null ? null : { id: r.category_id, slug: r.category_slug, name: r.category_name }
+      id: `p:${r.id}`,
+      name: r.store_name,
+      address: r.address,
+      reason: r.geocode_status,
+      category: r.category_id == null ? null : { id: r.category_id, slug: r.category_slug, name: r.category_name },
     }));
   },
 
   /** Totals per layer for the whole market — the stat cells — regardless of any filter. */
   async counts(marketId: number, k: Db = db): Promise<StoreCounts> {
-    const { rows } = await k.raw(`
+    const { rows } = await k.raw(
+      `
       SELECT (SELECT COUNT(*) FROM discovered_stores WHERE market_id = :id)::int AS discovered,
              (SELECT COUNT(*) FROM market_portfolio_stores WHERE market_id = :id AND placement = 'inside')::int AS inside,
              (SELECT COUNT(*) FROM market_portfolio_stores WHERE market_id = :id AND placement = 'outside')::int AS outside,
              (SELECT COUNT(*) FROM market_portfolio_stores WHERE market_id = :id AND placement = 'unlocated')::int AS unlocated,
-             (SELECT COUNT(*) FROM market_portfolio_stores WHERE market_id = :id AND matched_store_id IS NOT NULL)::int AS matched`, { id: marketId });
+             (SELECT COUNT(*) FROM market_portfolio_stores WHERE market_id = :id AND matched_store_id IS NOT NULL)::int AS matched`,
+      { id: marketId },
+    );
     const r = rows[0];
     return { discovered: r.discovered, portfolioInside: r.inside, portfolioOutside: r.outside, portfolioUnlocated: r.unlocated, matched: r.matched };
   },

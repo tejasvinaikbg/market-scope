@@ -17,17 +17,17 @@ export async function up(knex: Knex): Promise<void> {
 
   await knex.schema.createTable('portfolio_stores', (t) => {
     t.increments('id');
-    t.integer('portfolio_id').notNullable().references('portfolios.id').onDelete('CASCADE');   // delete the file, its rows go too
-    t.integer('row_number').notNullable();                        // spreadsheet row (header = 1): the number the user sees
+    t.integer('portfolio_id').notNullable().references('portfolios.id').onDelete('CASCADE'); // delete the file, its rows go too
+    t.integer('row_number').notNullable(); // spreadsheet row (header = 1): the number the user sees
     t.text('store_name').notNullable();
     t.text('address').notNullable();
     t.text('city').notNullable();
     t.text('state').notNullable();
     t.text('country').notNullable();
-    t.text('category_raw').notNullable();                         // exactly what the file said
-    t.integer('category_id').references('categories.id');        // resolved when it matches a seeded category, else NULL
-    t.specificType('location', 'geography(Point, 4326)');        // NULL until uploaded with coordinates, or geocoded later
-    t.text('location_source');                                    // 'uploaded' | 'geocoded'
+    t.text('category_raw').notNullable(); // exactly what the file said
+    t.integer('category_id').references('categories.id'); // resolved when it matches a seeded category, else NULL
+    t.specificType('location', 'geography(Point, 4326)'); // NULL until uploaded with coordinates, or geocoded later
+    t.text('location_source'); // 'uploaded' | 'geocoded'
     t.unique(['portfolio_id', 'row_number']);
     t.check("location_source IN ('uploaded', 'geocoded')", [], 'portfolio_stores_location_source_check');
     t.check('(location IS NULL) = (location_source IS NULL)', [], 'portfolio_stores_location_pair_check');

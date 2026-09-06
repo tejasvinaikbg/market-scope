@@ -1,8 +1,8 @@
 /**
  * Serves the OpenAPI document at /api/openapi.json and Swagger UI at /api/docs.
  */
-import { Router } from "express";
-import swaggerUi from "swagger-ui-express";
+import { Router } from 'express';
+import swaggerUi from 'swagger-ui-express';
 import { buildOpenApiDocument } from '../openapi/documents.ts';
 
 export function docsRouter() {

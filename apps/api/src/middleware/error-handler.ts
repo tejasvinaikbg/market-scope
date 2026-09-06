@@ -16,12 +16,14 @@ export const notFoundHandler: RequestHandler = (_req, res) => {
 export const errorHandler: ErrorRequestHandler = (err, req, res, _next) => {
   if (isAppError(err)) {
     res.status(err.status).json({ error: { code: err.code, message: err.message, details: err.details } });
-  } else if (err instanceof ZodError) {                                  // request failed schema validation
+  } else if (err instanceof ZodError) {
+    // request failed schema validation
     res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: 'Validation error', details: err.issues } });
-  } else if (err?.type === 'entity.parse.failed') {                      // express.json() could not parse the body
+  } else if (err?.type === 'entity.parse.failed') {
+    // express.json() could not parse the body
     res.status(400).json({ error: { code: 'INVALID_JSON', message: 'Invalid JSON' } });
   } else {
-    req.log.error({ err }, 'Unhandled error');                           // a 500 logs the stack and never returns it
+    req.log.error({ err }, 'Unhandled error'); // a 500 logs the stack and never returns it
     res.status(500).json({ error: { code: 'INTERNAL_SERVER_ERROR', message: 'Internal server error' } });
   }
 };

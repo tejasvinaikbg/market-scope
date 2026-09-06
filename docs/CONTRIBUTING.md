@@ -28,5 +28,7 @@ The conventions the code follows. They are short because the code is meant to ex
 ## Working
 
 - Write a migration, then run it. Ports other than the defaults go in the ignored `.env` only.
-- Run `npm run typecheck`, `npm test` and `npm run test:integration` before a commit. Commit messages are one plain line.
+- Run `npm run typecheck`, `npm run lint`, `npm test` and `npm run test:integration` before a commit; `npm run lint:fix`
+  applies ESLint's fixes and Prettier's formatting (160 columns, single quotes, trailing commas). Commit messages are one
+  plain line.
 - Add every "for now" decision to the [register](production/upgrade-register.md) with the trigger that would revisit it.

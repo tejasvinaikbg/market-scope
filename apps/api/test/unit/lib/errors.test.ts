@@ -5,7 +5,7 @@ import { createAppError, isAppError, notFound, badRequest } from '../../../src/l
 
 test('createAppError produces a real Error with status, code and details', () => {
   const err = createAppError(422, 'CUSTOM', 'something specific', { field: 'x' });
-  assert.ok(err instanceof Error);                    // stack traces and `throw` behave normally
+  assert.ok(err instanceof Error); // stack traces and `throw` behave normally
   assert.equal(err.message, 'something specific');
   assert.equal(err.status, 422);
   assert.equal(err.code, 'CUSTOM');
@@ -15,7 +15,7 @@ test('createAppError produces a real Error with status, code and details', () =>
 test('isAppError recognises only errors made by createAppError', () => {
   assert.equal(isAppError(createAppError(400, 'X', 'x')), true);
   assert.equal(isAppError(new Error('plain')), false);
-  assert.equal(isAppError({ status: 400, code: 'X', message: 'looks alike' }), false);   // shape alone is not enough
+  assert.equal(isAppError({ status: 400, code: 'X', message: 'looks alike' }), false); // shape alone is not enough
   assert.equal(isAppError(null), false);
 });
 

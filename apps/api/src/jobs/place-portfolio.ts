@@ -6,7 +6,10 @@
 import { placementQueries, type PlacementCounts } from '../queries/placement.ts';
 import { logger } from '../lib/logger.ts';
 
-export async function placePortfolio(marketId: number, log: (message: string, meta?: Record<string, unknown>) => void = (m, meta) => logger.info(meta ?? {}, m)): Promise<PlacementCounts> {
+export async function placePortfolio(
+  marketId: number,
+  log: (message: string, meta?: Record<string, unknown>) => void = (m, meta) => logger.info(meta ?? {}, m),
+): Promise<PlacementCounts> {
   await placementQueries.placeAll(marketId);
   const counts = await placementQueries.counts(marketId);
   log('portfolio placed', { marketId, ...counts });

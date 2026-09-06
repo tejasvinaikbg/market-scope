@@ -9,7 +9,7 @@ export async function up(knex: Knex): Promise<void> {
   await knex.schema.createTable('market_portfolio_stores', (t) => {
     t.integer('market_id').notNullable().references('markets.id').onDelete('CASCADE');
     t.integer('portfolio_store_id').notNullable().references('portfolio_stores.id').onDelete('CASCADE');
-    t.text('placement').notNullable();                                    // 'inside' | 'outside' | 'unlocated'
+    t.text('placement').notNullable(); // 'inside' | 'outside' | 'unlocated'
     t.timestamp('placed_at', { useTz: true }).notNullable().defaultTo(knex.fn.now());
     t.primary(['market_id', 'portfolio_store_id']);
     t.check("placement IN ('inside', 'outside', 'unlocated')", [], 'market_portfolio_stores_placement_check');

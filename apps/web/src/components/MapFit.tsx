@@ -8,7 +8,10 @@ import { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 import type { Bbox } from '@market-scope/shared';
 
-export const toBounds = (b: Bbox): [[number, number], [number, number]] => [[b.south, b.west], [b.north, b.east]];
+export const toBounds = (b: Bbox): [[number, number], [number, number]] => [
+  [b.south, b.west],
+  [b.north, b.east],
+];
 
 export function Fit({ bbox }: { bbox: Bbox | null }) {
   const map = useMap();
@@ -16,9 +19,20 @@ export function Fit({ bbox }: { bbox: Bbox | null }) {
   useEffect(() => {
     if (!bbox) return;
     const el = map.getContainer();
-    const fit = () => { map.invalidateSize(); map.fitBounds(toBounds(bbox), { padding: [24, 24] }); };
-    if (el.clientWidth > 0) { fit(); return; }
-    const ro = new ResizeObserver(() => { if (el.clientWidth > 0) { fit(); ro.disconnect(); } });
+    const fit = () => {
+      map.invalidateSize();
+      map.fitBounds(toBounds(bbox), { padding: [24, 24] });
+    };
+    if (el.clientWidth > 0) {
+      fit();
+      return;
+    }
+    const ro = new ResizeObserver(() => {
+      if (el.clientWidth > 0) {
+        fit();
+        ro.disconnect();
+      }
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, [map, key]); // eslint-disable-line react-hooks/exhaustive-deps

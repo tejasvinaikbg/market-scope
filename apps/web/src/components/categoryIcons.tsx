@@ -27,7 +27,10 @@ export const categoryIconHtml = (slug: string | null | undefined, size = 14) =>
 const keyed = new Map<IconNode, ReactIconNode>();
 const forReact = (node: IconNode): ReactIconNode => {
   let k = keyed.get(node);
-  if (!k) { k = node.map(([tag, attrs], i) => [tag, { ...attrs, key: String(i) }]) as unknown as ReactIconNode; keyed.set(node, k); }
+  if (!k) {
+    k = node.map(([tag, attrs], i) => [tag, { ...attrs, key: String(i) }]) as unknown as ReactIconNode;
+    keyed.set(node, k);
+  }
   return k;
 };
 

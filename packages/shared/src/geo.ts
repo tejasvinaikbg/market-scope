@@ -1,10 +1,18 @@
 /** A rectangular boundary in WGS84 degrees. */
-export interface Bbox { south: number; west: number; north: number; east: number }
-export interface LatLng { lat: number; lng: number }
+export interface Bbox {
+  south: number;
+  west: number;
+  north: number;
+  east: number;
+}
+export interface LatLng {
+  lat: number;
+  lng: number;
+}
 
 /** Product rules from the brief. */
 export const MAX_MARKET_AREA_SQ_KM = 30;
-export const MIN_MARKET_AREA_SQ_KM = 0.01;   // below ~100 m × 100 m it is a mis-drag, not a market
+export const MIN_MARKET_AREA_SQ_KM = 0.01; // below ~100 m × 100 m it is a mis-drag, not a market
 /** Discovery's grid: cells this many degrees on a side (≈ 2.8 km N–S, ≈ 2.7 km E–W near Bengaluru), aligned to the world, not to the boundary. */
 export const GRID_CELL_DEG = 0.025;
 /** A portfolio store and a discovered store of the same category this close are the same shop (the brief's bonus). */
@@ -41,7 +49,10 @@ export function bboxDimensionsKm(b: Bbox): { widthKm: number; heightKm: number }
   return { widthKm: (b.east - b.west) * KM_PER_DEG_LAT * Math.cos(midLat), heightKm: (b.north - b.south) * KM_PER_DEG_LAT };
 }
 
-export interface GridCell { key: string; bbox: Bbox }
+export interface GridCell {
+  key: string;
+  bbox: Bbox;
+}
 
 /**
  * The fixed-grid cells that cover a box, row-major (south→north, west→east). Cells are aligned to multiples of
@@ -50,8 +61,8 @@ export interface GridCell { key: string; bbox: Bbox }
  * filters results by the box. The cell count is the number of places-API calls a run makes: the "cost" the setup screen shows.
  */
 export function gridCells(b: Bbox, cellDeg = GRID_CELL_DEG): GridCell[] {
-  const first = (v: number) => Math.floor(v / cellDeg + 1e-9);          // 77.6 / 0.025 is 3103.9999… in floating point: nudge onto the line
-  const last = (v: number) => Math.floor(v / cellDeg - 1e-9);           // an edge exactly on a grid line does not start a new cell
+  const first = (v: number) => Math.floor(v / cellDeg + 1e-9); // 77.6 / 0.025 is 3103.9999… in floating point: nudge onto the line
+  const last = (v: number) => Math.floor(v / cellDeg - 1e-9); // an edge exactly on a grid line does not start a new cell
   const cells: GridCell[] = [];
   for (let i = first(b.south); i <= last(b.north); i++) {
     for (let j = first(b.west); j <= last(b.east); j++) {
@@ -71,9 +82,7 @@ export function squareAround(centre: LatLng, areaSqKm: number): Bbox {
   return { south: centre.lat - dLat, north: centre.lat + dLat, west: centre.lng - dLng, east: centre.lng + dLng };
 }
 
-export const pointInBbox = (p: LatLng, b: Bbox): boolean =>
-  p.lat >= b.south && p.lat <= b.north && p.lng >= b.west && p.lng <= b.east;
-
+export const pointInBbox = (p: LatLng, b: Bbox): boolean => p.lat >= b.south && p.lat <= b.north && p.lng >= b.west && p.lng <= b.east;
 
 /** Where a new market starts: a square of this area on the city centre — under the cap, so the form is usable at once. */
 export const DEFAULT_MARKET_AREA_SQ_KM = 24;

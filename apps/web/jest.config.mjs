@@ -8,10 +8,12 @@ const createJestConfig = nextJest({ dir: './' });
 
 export default createJestConfig({
   testEnvironment: 'jsdom',
-  testMatch: ['<rootDir>/test/**/*.test.{ts,tsx}'],   // a test with no JSX is a .ts file
+  testMatch: ['<rootDir>/test/**/*.test.{ts,tsx}'], // a test with no JSX is a .ts file
   setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
-  moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },   // the preset maps `@` for imports; jest.mock() needs it spelled out too
-  restoreMocks: true,                                   // every jest.spyOn is undone after each test
-  clearMocks: true,                                     // and every jest.fn() forgets its calls, so tests cannot leak into each other
-  watchman: false,                                      // file crawling without Watchman: one less machine-specific dependency
+  moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' }, // the preset maps `@` for imports; jest.mock() needs it spelled out too
+  restoreMocks: true, // every jest.spyOn is undone after each test
+  clearMocks: true, // and every jest.fn() forgets its calls, so tests cannot leak into each other
+  watchman: false,
+  collectCoverageFrom: ['src/**/*.{ts,tsx}'], // coverage is measured over the app, not the tests or config
+  coverageReporters: ['text-summary', 'lcov'], // file crawling without Watchman: one less machine-specific dependency
 });

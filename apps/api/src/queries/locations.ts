@@ -1,11 +1,22 @@
 /**
  * All SQL for countries, states and cities as one dropdown tree.
  */
-import { db, type Db } from '../db/knex.ts'
+import { db, type Db } from '../db/knex.ts';
 
-export interface CityRef { id: number; name: string }
-export interface StateRef { id: number; name: string; cities: CityRef[] }
-export interface CountryRef { id: number; name: string; states: StateRef[] }
+export interface CityRef {
+  id: number;
+  name: string;
+}
+export interface StateRef {
+  id: number;
+  name: string;
+  cities: CityRef[];
+}
+export interface CountryRef {
+  id: number;
+  name: string;
+  states: StateRef[];
+}
 
 export const locationsQueries = {
   // dropdown
@@ -14,9 +25,7 @@ export const locationsQueries = {
       .join('states as s', 's.country_id', 'c.id')
       .join('cities as ci', 'ci.state_id', 's.id')
       .select('c.id as countryId', 'c.name as country', 's.id as stateId', 's.name as state', 'ci.id as cityId', 'ci.name as city')
-      .orderBy([
-        'c.name', 's.name', 'ci.name'
-      ]);
+      .orderBy(['c.name', 's.name', 'ci.name']);
 
     const countries = new Map<number, CountryRef>();
     const states = new Map<number, StateRef>();
@@ -25,8 +34,9 @@ export const locationsQueries = {
       if (!country) {
         country = {
           id: row.countryId,
-          name: row.country, states: []
-        }
+          name: row.country,
+          states: [],
+        };
         countries.set(country.id, country);
       }
       let state = states.get(row.stateId);
@@ -34,8 +44,8 @@ export const locationsQueries = {
         state = {
           id: row.stateId,
           name: row.state,
-          cities: []
-        }
+          cities: [],
+        };
         states.set(state.id, state);
         country.states.push(state);
       }
@@ -43,4 +53,4 @@ export const locationsQueries = {
     }
     return [...countries.values()];
   },
-}
+};

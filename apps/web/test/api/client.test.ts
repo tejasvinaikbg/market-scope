@@ -2,7 +2,15 @@
 import { api, isApiError } from '@/api/client';
 
 const reply = (status: number, body: unknown, json = true) =>
-  jest.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: status < 400, status, statusText: `status ${status}`, json: async () => { if (!json) throw new Error('not json'); return body; } } as Response);
+  jest.spyOn(globalThis, 'fetch').mockResolvedValue({
+    ok: status < 400,
+    status,
+    statusText: `status ${status}`,
+    json: async () => {
+      if (!json) throw new Error('not json');
+      return body;
+    },
+  } as Response);
 
 test('a 2xx returns the parsed body, and the request goes to /api', async () => {
   const spy = reply(200, { hello: 'world' });

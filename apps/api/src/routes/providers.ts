@@ -7,20 +7,29 @@ import { registry, errorResponses } from '../openapi/registry.ts';
 import { listProviders } from '../providers/availability.ts';
 import { cacheFor } from '../middleware/cache-control.ts';
 
-const ProviderOption = z.object({
-  id: z.enum(['overpass', 'nominatim', 'google']), name: z.string(), enabled: z.boolean(),
-  reason: z.enum(['not configured', 'disabled']).nullable(),
-}).openapi('ProviderOption');
+const ProviderOption = z
+  .object({
+    id: z.enum(['overpass', 'nominatim', 'google']),
+    name: z.string(),
+    enabled: z.boolean(),
+    reason: z.enum(['not configured', 'disabled']).nullable(),
+  })
+  .openapi('ProviderOption');
 const Providers = z.object({ places: z.array(ProviderOption), geocoding: z.array(ProviderOption) }).openapi('Providers');
 
 registry.registerPath({
-  method: 'get', path: '/api/providers', tags: ['providers'], summary: 'Data sources on offer, with availability',
+  method: 'get',
+  path: '/api/providers',
+  tags: ['providers'],
+  summary: 'Data sources on offer, with availability',
   description: 'OSM providers are always available. A Google provider is available when its key is configured and its switch is on.',
   responses: { 200: { description: 'OK', content: { 'application/json': { schema: Providers } } }, ...errorResponses(500) },
 });
 
 export function providersRouter() {
   const router = Router();
-  router.get('/providers', cacheFor(60), (_req, res) => { res.json(listProviders()); });   // configuration can change on a redeploy
+  router.get('/providers', cacheFor(60), (_req, res) => {
+    res.json(listProviders());
+  }); // configuration can change on a redeploy
   return router;
 }

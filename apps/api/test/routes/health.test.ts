@@ -5,7 +5,10 @@ import { db } from '../../src/db/knex.ts';
 
 const server = buildApp().listen(0);
 const base = `http://localhost:${(server.address() as { port: number }).port}`;
-after(async () => { server.close(); await db.destroy(); });
+after(async () => {
+  server.close();
+  await db.destroy();
+});
 
 test('health reports the database as reachable when it is', async () => {
   const res = await fetch(`${base}/api/health`);

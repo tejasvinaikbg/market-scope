@@ -11,27 +11,40 @@ import { marketsQueries } from '../queries/markets.ts';
 import { portfoliosQueries } from '../queries/portfolios.ts';
 import { logger } from '../lib/logger.ts';
 
-export interface GeocodeDeps { geocoder: Geocoder; log: (message: string, meta?: Record<string, unknown>) => void }
-export interface GeocodeResult { total: number; located: number; notFound: number; errors: number }
+export interface GeocodeDeps {
+  geocoder: Geocoder;
+  log: (message: string, meta?: Record<string, unknown>) => void;
+}
+export interface GeocodeResult {
+  total: number;
+  located: number;
+  notFound: number;
+  errors: number;
+}
 
 const defaults: GeocodeDeps = { geocoder: defaultGeocoder, log: (message, meta) => logger.info(meta ?? {}, message) };
 
 export async function geocodePortfolio(marketId: number, deps: GeocodeDeps = defaults): Promise<GeocodeResult> {
   const market = await marketsQueries.byId(marketId);
   if (!market) throw new Error(`market ${marketId} not found`);
-  const city = await getCityBounds(market.cityId);                                  // cached on the city row since the setup screen asked
+  const city = await getCityBounds(market.cityId); // cached on the city row since the setup screen asked
   const stores = await portfoliosQueries.storesToGeocode(market.portfolioId);
   const result: GeocodeResult = { total: stores.length, located: 0, notFound: 0, errors: 0 };
 
   for (const store of stores) {
     const query = `${store.address}, ${store.city}, ${store.state}, ${store.country}`;
     try {
-      const point = await deps.geocoder.lookupPoint(query, city.bbox);               // throttled inside the geocoder: one per second
-      if (point) { await portfoliosQueries.setGeocoded(store.id, point); result.located++; }
-      else { await portfoliosQueries.setGeocodeStatus(store.id, 'not_found'); result.notFound++; }
+      const point = await deps.geocoder.lookupPoint(query, city.bbox); // throttled inside the geocoder: one per second
+      if (point) {
+        await portfoliosQueries.setGeocoded(store.id, point);
+        result.located++;
+      } else {
+        await portfoliosQueries.setGeocodeStatus(store.id, 'not_found');
+        result.notFound++;
+      }
       deps.log('geocode store', { marketId, storeId: store.id, found: !!point });
     } catch (err) {
-      await portfoliosQueries.setGeocodeStatus(store.id, 'error');                  // after the client's retries; the next run tries again
+      await portfoliosQueries.setGeocodeStatus(store.id, 'error'); // after the client's retries; the next run tries again
       result.errors++;
       deps.log('geocode store failed', { marketId, storeId: store.id, error: (err as Error).message });
     }

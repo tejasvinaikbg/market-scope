@@ -37,7 +37,9 @@ const pin = (layer: StoreLayer, slug: string | null, picked: boolean, matched: b
     icon = L.divIcon({
       className: `${LOOK[layer].className}${picked ? ' store-pin-picked' : ''}`,
       html: categoryIconHtml(slug, picked ? 16 : 14) + (matched ? checkHtml() : ''),
-      iconSize: [size, size], iconAnchor: [size / 2, size / 2], tooltipAnchor: [0, -size / 2 - 1],
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      tooltipAnchor: [0, -size / 2 - 1],
     });
     icons.set(key, icon);
   }
@@ -50,34 +52,67 @@ const label = (s: Store) => `${s.name}${s.category ? ` · ${s.category.name}` : 
 /** Moves to the store picked in the list. Keyed on the object, so picking the same store again still recentres. */
 function Focus({ at }: { at: LatLng | null }) {
   const map = useMap();
-  useEffect(() => { if (at) map.setView([at.lat, at.lng], Math.max(map.getZoom(), 16)); }, [map, at]);
+  useEffect(() => {
+    if (at) map.setView([at.lat, at.lng], Math.max(map.getZoom(), 16));
+  }, [map, at]);
   return null;
 }
 
-export default function MarketMap({ boundary, stores, focus, selectedId, onSelect }: {
-  boundary: Bbox; stores: Store[]; focus: LatLng | null; selectedId: string | null; onSelect: (id: string) => void;
+export default function MarketMap({
+  boundary,
+  stores,
+  focus,
+  selectedId,
+  onSelect,
+}: {
+  boundary: Bbox;
+  stores: Store[];
+  focus: LatLng | null;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
 }) {
   // A matched pair is joined by a line when both ends are on the map (the discovered layer may be off).
   const byId = new Map(stores.map((s) => [s.id, s]));
-  const pairs = stores.flatMap((s) => { const twin = s.match && byId.get(s.match.id); return twin ? [[s, twin] as const] : []; });
+  const pairs = stores.flatMap((s) => {
+    const twin = s.match && byId.get(s.match.id);
+    return twin ? [[s, twin] as const] : [];
+  });
   return (
     <>
       <div className="min-h-0 flex-1">
         <MapContainer center={[12.97, 77.59]} zoom={12} className="h-full w-full" scrollWheelZoom>
-          <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
           {/* The tiles are light in both themes, so the map palette never changes with the theme; the boundary wears a white casing under the accent line. */}
           <Rectangle bounds={toBounds(boundary)} pathOptions={{ color: 'var(--map-surface)', weight: 7, fill: false, opacity: 0.9 }} interactive={false} />
           <Rectangle bounds={toBounds(boundary)} pathOptions={{ color: 'var(--map-accent)', weight: 3, fillOpacity: 0.05 }} interactive={false} />
           {pairs.map(([s, twin]) => (
-            <Polyline key={`pair:${s.id}`} positions={[[s.lat, s.lng], [twin.lat, twin.lng]]} pathOptions={{ color: 'var(--map-match)', weight: 2, dashArray: '4 4' }} interactive={false} />
+            <Polyline
+              key={`pair:${s.id}`}
+              positions={[
+                [s.lat, s.lng],
+                [twin.lat, twin.lng],
+              ]}
+              pathOptions={{ color: 'var(--map-match)', weight: 2, dashArray: '4 4' }}
+              interactive={false}
+            />
           ))}
           {stores.map((s) => {
             const picked = s.id === selectedId;
             return (
-              <Marker key={s.id} position={[s.lat, s.lng]} icon={pin(s.layer, s.category?.slug ?? null, picked, s.match !== null)}
-                zIndexOffset={picked ? 1000 : LOOK[s.layer].zIndexOffset} eventHandlers={{ click: () => onSelect(s.id) }}>
+              <Marker
+                key={s.id}
+                position={[s.lat, s.lng]}
+                icon={pin(s.layer, s.category?.slug ?? null, picked, s.match !== null)}
+                zIndexOffset={picked ? 1000 : LOOK[s.layer].zIndexOffset}
+                eventHandlers={{ click: () => onSelect(s.id) }}
+              >
                 {/* The picked store keeps its label open; the others show theirs on hover. The key remounts the label when that changes. */}
-                <Tooltip key={String(picked)} permanent={picked}>{label(s)}</Tooltip>
+                <Tooltip key={String(picked)} permanent={picked}>
+                  {label(s)}
+                </Tooltip>
               </Marker>
             );
           })}
@@ -86,8 +121,14 @@ export default function MarketMap({ boundary, stores, focus, selectedId, onSelec
         </MapContainer>
       </div>
       <div className="caption flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-line bg-surface px-4 py-3">
-        <span className="flex items-center gap-2"><span className="inline-block w-5 border-t-2 border-map-accent" /> Boundary</span>
-        {LAYERS.map((l) => <span key={l.id} className="flex items-center gap-2"><LayerSwatch layer={l.id} /> {l.label}</span>)}
+        <span className="flex items-center gap-2">
+          <span className="inline-block w-5 border-t-2 border-map-accent" /> Boundary
+        </span>
+        {LAYERS.map((l) => (
+          <span key={l.id} className="flex items-center gap-2">
+            <LayerSwatch layer={l.id} /> {l.label}
+          </span>
+        ))}
         <span>Colour is the layer, the icon is the category, the check is a match</span>
       </div>
     </>

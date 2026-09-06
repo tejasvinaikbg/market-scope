@@ -13,7 +13,8 @@ export const matchingQueries = {
    */
   async matchAll(marketId: number, radiusM: number, k: Db = db): Promise<number> {
     await k('market_portfolio_stores').where({ market_id: marketId }).update({ matched_store_id: null, match_distance_m: null, matched_at: null });
-    const { rowCount } = await k.raw(`
+    const { rowCount } = await k.raw(
+      `
       UPDATE market_portfolio_stores p
          SET matched_store_id = near.id, match_distance_m = near.distance_m, matched_at = now()
         FROM portfolio_stores s
@@ -25,7 +26,9 @@ export const matchingQueries = {
                 AND (s.category_id IS NULL OR d.category_id = s.category_id)
               ORDER BY d.location <-> s.location
               LIMIT 1) near
-       WHERE p.market_id = :marketId AND s.id = p.portfolio_store_id AND s.location IS NOT NULL`, { marketId, radius: radiusM });
+       WHERE p.market_id = :marketId AND s.id = p.portfolio_store_id AND s.location IS NOT NULL`,
+      { marketId, radius: radiusM },
+    );
     return rowCount ?? 0;
   },
 

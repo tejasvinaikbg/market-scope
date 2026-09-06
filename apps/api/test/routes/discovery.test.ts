@@ -17,7 +17,7 @@ import type { PlacesProvider } from '../../src/providers/places.ts';
 const server = buildApp().listen(0);
 const base = `http://localhost:${(server.address() as { port: number }).port}`;
 const fixture = createFixturePlacesProvider(new URL('../../fixtures/overpass.json', import.meta.url).pathname);
-const quiet = () => { };
+const quiet = () => {};
 let portfolioId = 0;
 const markets: number[] = [];
 
@@ -26,11 +26,11 @@ before(async () => {
   form.append('name', 'test-discovery');
   form.append('file', new Blob([await readFile(new URL('../../fixtures/sample_portfolio_bengaluru.csv', import.meta.url), 'utf8')]), 'sample.csv');
   portfolioId = (await (await fetch(`${base}/api/portfolios`, { method: 'POST', body: form })).json()).id;
-  await fetch(`${base}/api/cities/1/bbox`);                                                     // the pipeline's geocoding step needs the city box
+  await fetch(`${base}/api/cities/1/bbox`); // the pipeline's geocoding step needs the city box
 });
 after(async () => {
-  if (markets.length) await db('markets').whereIn('id', markets).del();   // stores and jobs go with them (ON DELETE CASCADE)
-  await db('place_tiles').where({ provider: 'fixture' }).del();           // the cache is shared with the dev database; fixture entries are ours to remove
+  if (markets.length) await db('markets').whereIn('id', markets).del(); // stores and jobs go with them (ON DELETE CASCADE)
+  await db('place_tiles').where({ provider: 'fixture' }).del(); // the cache is shared with the dev database; fixture entries are ours to remove
   await db('portfolios').where({ id: portfolioId }).del();
   server.close();
   await db.destroy();
@@ -39,8 +39,9 @@ after(async () => {
 /** Creates a ~20 km² Koramangala market for supermarkets and pharmacies; discovery is queued but not run (JOBS=off in tests). */
 async function createMarket() {
   const res = await fetch(`${base}/api/markets`, {
-    method: 'POST', headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ portfolioId, cityId: 1, categoryIds: [1, 2], boundary: { south: 12.92, west: 77.60, north: 12.956, east: 77.646 } })
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ portfolioId, cityId: 1, categoryIds: [1, 2], boundary: { south: 12.92, west: 77.6, north: 12.956, east: 77.646 } }),
   });
   const body = await res.json();
   markets.push(body.id);
@@ -51,16 +52,22 @@ const stores = (marketId: number) => db('discovered_stores').where({ market_id: 
 test('create queues one pipeline job and leaves the market pending with no stores', async () => {
   const m = await createMarket();
   assert.deepEqual([m.status, m.storeCount, m.error, m.progress], ['pending', 0, null, null]);
-  assert.deepEqual(m.placement, { inside: 0, outside: 0, unlocated: 0 });                             // nothing placed until the pipeline runs
+  assert.deepEqual(m.placement, { inside: 0, outside: 0, unlocated: 0 }); // nothing placed until the pipeline runs
   const jobs = await jobsQueries.forMarket(m.id);
-  assert.deepEqual(jobs.map((j) => [j.type, j.status, j.payload]), [[MARKET_PIPELINE, 'pending', { marketId: m.id }]]);
+  assert.deepEqual(
+    jobs.map((j) => [j.type, j.status, j.payload]),
+    [[MARKET_PIPELINE, 'pending', { marketId: m.id }]],
+  );
 });
 
 test('discovery keeps what is inside the boundary and in the chosen categories; a re-run updates instead of duplicating', async () => {
   const m = await createMarket();
   const first = await discoverStores(m.id, { places: fixture, log: quiet, cacheHours: 0 });
-  assert.deepEqual([first.tiles, first.failedTiles, first.stores, first.status], [6, 0, 4, 'ready']);      // 3 rows × 2 columns of 0.025° cells
-  assert.deepEqual((await stores(m.id)).map((s) => s.name), ['Apollo Pharmacy', 'FreshMart Koramangala', 'More', 'Unnamed pharmacy']);   // bakery ignored, Far Away Mart outside
+  assert.deepEqual([first.tiles, first.failedTiles, first.stores, first.status], [6, 0, 4, 'ready']); // 3 rows × 2 columns of 0.025° cells
+  assert.deepEqual(
+    (await stores(m.id)).map((s) => s.name),
+    ['Apollo Pharmacy', 'FreshMart Koramangala', 'More', 'Unnamed pharmacy'],
+  ); // bakery ignored, Far Away Mart outside
 
   const again = await discoverStores(m.id, { places: fixture, log: quiet, cacheHours: 0 });
   assert.equal(again.stores, 4);
@@ -73,7 +80,10 @@ test('discovery keeps what is inside the boundary and in the chosen categories; 
 test('one bad tile makes the market partial and names the tile; every tile failing makes it failed', async () => {
   const m = await createMarket();
   let calls = 0;
-  const flaky: PlacesProvider = { id: 'fixture', discover: (tile, cats) => (++calls === 2 ? Promise.reject(new Error('overpass 504 from a')) : fixture.discover(tile, cats)) };
+  const flaky: PlacesProvider = {
+    id: 'fixture',
+    discover: (tile, cats) => (++calls === 2 ? Promise.reject(new Error('overpass 504 from a')) : fixture.discover(tile, cats)),
+  };
   const r = await discoverStores(m.id, { places: flaky, log: quiet, cacheHours: 0 });
   assert.deepEqual([r.failedTiles, r.status], [1, 'partial']);
   const partial = await (await fetch(`${base}/api/markets/${m.id}`)).json();
@@ -85,15 +95,21 @@ test('one bad tile makes the market partial and names the tile; every tile faili
 });
 
 test('a cell answered for one market serves the next market that covers it; other categories are another question', async () => {
-  await db('place_tiles').where({ provider: 'fixture' }).del();          // start from an empty cache
+  await db('place_tiles').where({ provider: 'fixture' }).del(); // start from an empty cache
   const calls: string[] = [];
-  const counting: PlacesProvider = { id: 'fixture', discover: (tile, cats) => { calls.push(`${tile.south},${tile.west}`); return fixture.discover(tile, cats); } };
+  const counting: PlacesProvider = {
+    id: 'fixture',
+    discover: (tile, cats) => {
+      calls.push(`${tile.south},${tile.west}`);
+      return fixture.discover(tile, cats);
+    },
+  };
   const a = await createMarket();
   const first = await discoverStores(a.id, { places: counting, log: quiet, cacheHours: 24 });
-  assert.deepEqual([first.tiles, first.cachedTiles, calls.length], [6, 0, 6]);                          // every cell asked once
-  const b = await createMarket();                                                                          // same boundary, same categories
+  assert.deepEqual([first.tiles, first.cachedTiles, calls.length], [6, 0, 6]); // every cell asked once
+  const b = await createMarket(); // same boundary, same categories
   const second = await discoverStores(b.id, { places: counting, log: quiet, cacheHours: 24 });
-  assert.deepEqual([second.cachedTiles, calls.length, second.stores], [6, 6, 4]);                         // no new calls; the same 4 stores
+  assert.deepEqual([second.cachedTiles, calls.length, second.stores], [6, 6, 4]); // no new calls; the same 4 stores
   const cached = await db('place_tiles').count('* as n').first();
   assert.ok(Number(cached?.n) >= 6);
 });

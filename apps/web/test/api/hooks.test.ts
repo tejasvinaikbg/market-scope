@@ -3,7 +3,7 @@ import { storesPath } from '@/api/hooks';
 
 test('no filters is the bare path', () => {
   expect(storesPath(7, {})).toBe('/markets/7/stores');
-  expect(storesPath(7, { layers: [], categories: [], q: '   ' })).toBe('/markets/7/stores');   // empty lists and blank search count as none
+  expect(storesPath(7, { layers: [], categories: [], q: '   ' })).toBe('/markets/7/stores'); // empty lists and blank search count as none
 });
 
 test('each filter in its place, lists as commas, the search encoded', () => {

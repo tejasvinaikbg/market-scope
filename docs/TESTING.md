@@ -31,6 +31,13 @@ Koramangala, one of them 122 m from the sample's FreshMart so a matched pair exi
 
 14 shared, 49 API unit, 45 API route, 51 web. Each lesson-sized change states the counts it expects.
 
+## Coverage
+
+`npm run test:coverage` runs the unit and component suites with coverage: `c8` over `node:test` for the shared package
+and the API, Jest's own for the web app. Each prints a summary and writes `coverage/lcov.info` in its workspace, which
+CI uploads as an artifact. Measured over the source, not the tests; the API's entry points, migrations and seeds are
+excluded because they are exercised by the route suites and the release step, not by unit tests.
+
 ## End to end
 
 `npm run test:e2e` starts the API and the web app for the run, against the fixture providers and a database of the
@@ -41,7 +48,7 @@ in the list, delete it; a second checks a bad file is refused; a phone project c
 
 ## In CI
 
-`.github/workflows/ci.yml` runs the same commands on every push: typecheck, `npm test`, the route suites against a
+`.github/workflows/ci.yml` runs the same commands on every push: typecheck, `npm run lint`, `npm test`, the route suites against a
 `postgis/postgis:16-3.4` service container, then the end-to-end run, then a second job builds both container images
 without pushing. Nothing in the file is specific to a machine or a person: the throwaway database's user and name and
 the `User-Agent` come from repository variables (`CI_DB_USER`, `CI_DB_NAME`, `CI_NOMINATIM_USER_AGENT`), its password

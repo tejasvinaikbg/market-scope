@@ -32,7 +32,10 @@ test('store discovery: overpass by default, and the mirror list splits on commas
 
 test('scale knobs default to a single local process, and a blank CORS origin means none', () => {
   const env = Env.parse({ ...good, CORS_ORIGIN: '' });
-  assert.deepEqual([env.DB_POOL_MAX, env.TILE_CACHE_HOURS, env.JOB_STALE_MINUTES, env.TRUST_PROXY, env.RATE_LIMIT_PER_MINUTE, env.CORS_ORIGIN], [10, 24, 15, 0, 300, undefined]);
+  assert.deepEqual(
+    [env.DB_POOL_MAX, env.TILE_CACHE_HOURS, env.JOB_STALE_MINUTES, env.TRUST_PROXY, env.RATE_LIMIT_PER_MINUTE, env.CORS_ORIGIN],
+    [10, 24, 15, 0, 300, undefined],
+  );
   assert.equal(Env.safeParse({ ...good, RATE_LIMIT_PER_MINUTE: '-1' }).success, false);
 });
 
