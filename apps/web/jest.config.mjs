@@ -12,5 +12,6 @@ export default createJestConfig({
   setupFilesAfterEnv: ['<rootDir>/test/setup.ts'],
   moduleNameMapper: { '^@/(.*)$': '<rootDir>/src/$1' },   // the preset maps `@` for imports; jest.mock() needs it spelled out too
   restoreMocks: true,                                   // every jest.spyOn is undone after each test
+  clearMocks: true,                                     // and every jest.fn() forgets its calls, so tests cannot leak into each other
   watchman: false,                                      // file crawling without Watchman: one less machine-specific dependency
 });

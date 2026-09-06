@@ -15,6 +15,13 @@ export const Env = z.object({
   DATABASE_URL: z.url(),
   GEOCODER: z.enum(['nominatim', 'fixture']).default('nominatim'),
   NOMINATIM_USER_AGENT: z.string().min(1),
+  // Data sources: every provider has a switch; the Google ones also need a key. Off means greyed out on the screen and refused by the API.
+  OVERPASS_ENABLED: z.enum(['true', 'false']).default('true'),
+  NOMINATIM_ENABLED: z.enum(['true', 'false']).default('true'),
+  GOOGLE_PLACES_API_KEY: z.string().trim().optional().transform((v) => v || undefined),      // a blank line in .env means "none"
+  GOOGLE_PLACES_ENABLED: z.enum(['true', 'false']).default('false'),
+  GOOGLE_GEOCODING_API_KEY: z.string().trim().optional().transform((v) => v || undefined),
+  GOOGLE_GEOCODING_ENABLED: z.enum(['true', 'false']).default('false'),
 })
 
 const env = Env.parse(process.env);
@@ -26,7 +33,13 @@ export const config = {
   APP_VERSION: pkg.version,
   APP_DESCRIPTION: pkg.description ?? "",
   GEOCODER: env.GEOCODER,
-  NOMINATIM_USER_AGENT: env.NOMINATIM_USER_AGENT
+  NOMINATIM_USER_AGENT: env.NOMINATIM_USER_AGENT,
+  OVERPASS_ENABLED: env.OVERPASS_ENABLED === 'true',
+  NOMINATIM_ENABLED: env.NOMINATIM_ENABLED === 'true',
+  GOOGLE_PLACES_API_KEY: env.GOOGLE_PLACES_API_KEY,
+  GOOGLE_PLACES_ENABLED: env.GOOGLE_PLACES_ENABLED === 'true',
+  GOOGLE_GEOCODING_API_KEY: env.GOOGLE_GEOCODING_API_KEY,
+  GOOGLE_GEOCODING_ENABLED: env.GOOGLE_GEOCODING_ENABLED === 'true',
 } as const;
 
 export type Config = typeof config;

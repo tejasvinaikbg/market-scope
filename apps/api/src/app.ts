@@ -13,6 +13,7 @@ import { categoriesRouter } from './routes/categories.ts'
 import { citiesRouter } from './routes/cities.ts'
 import { portfoliosRouter } from './routes/portfolios.ts';
 import { marketsRouter } from './routes/markets.ts';
+import { providersRouter } from './routes/providers.ts';
 
 /** Builds the Express app without listening, 
 so tests can drive it and the process file only wires it up. */
@@ -22,7 +23,7 @@ export function buildApp() {
   app.disable("x-powered-by");
   app.use(requestLogger);
   app.use(express.json({ limit: '1mb' }));
-  app.use('/api', healthRouter(), locationsRouter(), categoriesRouter(), citiesRouter(), portfoliosRouter(), marketsRouter(), echoRouter(), docsRouter());
+  app.use('/api', healthRouter(), locationsRouter(), categoriesRouter(), citiesRouter(), portfoliosRouter(), marketsRouter(), providersRouter(), echoRouter(), docsRouter());
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;

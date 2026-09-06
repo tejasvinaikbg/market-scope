@@ -4,12 +4,15 @@
  * This is the route file itself. It is a client component because it holds state, uses React Query hooks,
  * and loads the Leaflet map with `ssr: false`, which Next only allows inside client components.
  * The boundary is the user's: it starts as a legal square on the city centre and follows the handles on the map.
+ * "Create market" posts every decision; the server measures the boundary again and answers with the stored market.
  */
 import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Globe, Map, MapPin, ShoppingBag, Database, Maximize2, RotateCcw, ArrowRight, Crosshair } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Globe, Map, MapPin, ShoppingBag, Database, Maximize2, RotateCcw, ArrowRight, Crosshair, Loader } from 'lucide-react';
 import { bboxAreaSqKm, bboxDimensionsKm, estimateDiscoveryCalls, squareAround, padBbox, MAX_MARKET_AREA_SQ_KM, DEFAULT_MARKET_AREA_SQ_KM, type Bbox } from '@market-scope/shared';
-import { useLocations, useCategories, useCityBounds, usePortfolioSummary } from '@/api/hooks';
+import { useLocations, useCategories, useCityBounds, usePortfolioSummary, useCreateMarket, useProviders } from '@/api/hooks';
+import { isApiError } from '@/api/client';
 import { useCurrentPortfolio } from '@/app/providers';
 import { Field } from '@/components/Field';
 
@@ -18,14 +21,22 @@ const CityMap = dynamic(() => import('@/components/CityMap'), { ssr: false, load
 export default function Page() {
   const locations = useLocations();
   const categories = useCategories();
+  const providers = useProviders();                 // which data sources can be chosen right now
   const [countryId, setCountryId] = useState<number | null>(null);
   const [stateId, setStateId] = useState<number | null>(null);
   const [cityId, setCityId] = useState<number | null>(null);
   const [selected, setSelected] = useState<number[]>([]);
-  const [places, setPlaces] = useState<'overpass' | 'google'>('overpass');
-  const [geocoder, setGeocoder] = useState<'nominatim' | 'google'>('nominatim');
+  // Data sources: the user's pick, else the first option the API says is available. null until they choose.
+  const [placesChoice, setPlaces] = useState<'overpass' | 'google' | null>(null);
+  const [geocoderChoice, setGeocoder] = useState<'nominatim' | 'google' | null>(null);
   // The user's edits to the boundary, remembered per city so changing city starts fresh.
   const [draft, setDraft] = useState<{ cityId: number; box: Bbox } | null>(null);
+
+  // The data source in use: the user's pick, else the first the API says is available. The casts narrow the shared id union to each select's own.
+  const firstAvailable = (options: Array<{ id: string; enabled: boolean }> | undefined) => options?.find((o) => o.enabled)?.id ?? null;
+  const places = (placesChoice ?? firstAvailable(providers.data?.places) ?? 'overpass') as 'overpass' | 'google';
+  const geocoder = (geocoderChoice ?? firstAvailable(providers.data?.geocoding) ?? 'nominatim') as 'nominatim' | 'google';
+  const sourcesAvailable = !!providers.data?.places.some((p) => p.enabled) && !!providers.data?.geocoding.some((p) => p.enabled);
 
   const country = locations.data?.countries.find((c) => c.id === countryId) ?? null;
   const state = country?.states.find((s) => s.id === stateId) ?? null;
@@ -44,6 +55,17 @@ export default function Page() {
   const over = area > MAX_MARKET_AREA_SQ_KM;
 
   const toggle = (id: number) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+
+  // Create: every decision in one request; the server measures the boundary again. On success, on to the dashboard.
+  const router = useRouter();
+  const create = useCreateMarket();
+  const ready = !!portfolio && !!boundary && !!cityId && selected.length > 0 && !over && sourcesAvailable;
+  const onCreate = () => {
+    if (!portfolio || !boundary || !cityId) return;
+    create.mutate({ portfolioId: portfolio.id, cityId, categoryIds: selected, boundary, placesProvider: places, geocoderProvider: geocoder },
+      { onSuccess: (market) => router.push(`/dashboard/${market.id}`) });
+  };
+  const createError = create.error && isApiError(create.error) ? create.error : null;
 
   return (
     <div className="grid grid-cols-1 md:min-h-[calc(100vh-8rem)] md:grid-cols-[360px_1fr]">
@@ -87,14 +109,14 @@ export default function Page() {
         {selected.length > 0 && (
           <div className="space-y-3 border-t border-line pt-5">
             <div className="caption flex items-center gap-1.5"><Database size={14} /> Data sources</div>
-            <Field label="Store discovery" value={places} onChange={(e) => setPlaces(e.target.value as typeof places)}>
-              <option value="overpass">OSM Overpass</option>
-              <option value="google">Google Places API (New)</option>
+            {/* Options come from the API with their availability; an unavailable one is shown greyed out with the reason, not hidden. */}
+            <Field label="Store discovery" value={places} onChange={(e) => setPlaces(e.target.value as 'overpass' | 'google')}>
+              {providers.data?.places.map((p) => <option key={p.id} value={p.id} disabled={!p.enabled}>{p.name}{p.reason ? ` · ${p.reason}` : ''}</option>)}
             </Field>
-            <Field label="Address lookup" value={geocoder} onChange={(e) => setGeocoder(e.target.value as typeof geocoder)}>
-              <option value="nominatim">OSM Nominatim</option>
-              <option value="google">Google Geocoding API</option>
+            <Field label="Address lookup" value={geocoder} onChange={(e) => setGeocoder(e.target.value as 'nominatim' | 'google')}>
+              {providers.data?.geocoding.map((p) => <option key={p.id} value={p.id} disabled={!p.enabled}>{p.name}{p.reason ? ` · ${p.reason}` : ''}</option>)}
             </Field>
+            {providers.data && !sourcesAvailable && <p className="text-sm font-medium text-bad" role="alert">No data source is available for one of these. Ask whoever runs the service to enable one.</p>}
             <p className="text-xs text-muted">
               {places === 'overpass'
                 ? `Free, community-maintained data. Slower: about one request per second, one per 3 km tile of the boundary.`
@@ -131,9 +153,15 @@ export default function Page() {
 
         {/* The CTA appears only once the form is complete — the fields above already say what is missing. */}
         {cityId && selected.length > 0 && (
-          <button type="button" disabled className="flex w-full items-center justify-between rounded border border-line px-4 py-3 font-semibold text-muted disabled:opacity-60">
-            {portfolio ? 'Create market' : 'Upload a portfolio first'} <ArrowRight size={16} />
-          </button>
+          <div className="space-y-2">
+            {createError && <div role="alert" className="border border-bad bg-surface p-3 text-sm font-medium text-bad">{createError.message}</div>}
+            {create.isError && !createError && <div role="alert" className="border border-bad bg-surface p-3 text-sm font-medium text-bad">Couldn't reach the service. Check your connection and try again.</div>}
+            <button type="button" disabled={!ready || create.isPending} onClick={onCreate}
+              className={`flex w-full items-center justify-between rounded px-4 py-3 font-semibold disabled:opacity-60 ${ready ? 'bg-accent text-accent-fg' : 'border border-line text-muted'}`}>
+              {create.isPending ? <span className="flex items-center gap-2"><Loader size={16} className="animate-spin" /> Creating…</span> : portfolio ? 'Create market' : 'Upload a portfolio first'}
+              <ArrowRight size={16} />
+            </button>
+          </div>
         )}
       </section>
 

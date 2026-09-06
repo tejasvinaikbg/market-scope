@@ -9,6 +9,7 @@ import { marketsQueries, type PlacesProvider, type GeocoderProvider } from '../q
 import { portfoliosQueries } from '../queries/portfolios.ts';
 import { citiesQueries } from '../queries/cities.ts';
 import { categoriesQueries } from '../queries/categories.ts';
+import { providerUnavailable } from '../providers/availability.ts';
 
 export interface CreateMarketInput {
   name?: string; portfolioId: number; cityId: number; categoryIds: number[]; boundary: Bbox;
@@ -25,10 +26,9 @@ export async function createMarket(input: CreateMarketInput) {
   if (areaSqKm > MAX_MARKET_AREA_SQ_KM) throw badRequest('AREA_TOO_LARGE', `Boundary is ${areaSqKm.toFixed(2)} km²; the cap is ${MAX_MARKET_AREA_SQ_KM} km²`, { areaSqKm });
   if (areaSqKm < MIN_MARKET_AREA_SQ_KM) throw badRequest('AREA_TOO_SMALL', `Boundary is ${areaSqKm.toFixed(4)} km²; the minimum is ${MIN_MARKET_AREA_SQ_KM} km²`, { areaSqKm });
 
-  // 3. Providers: offered by the design, not configured yet. A clear refusal beats a silent fallback to OSM.
-  if (input.placesProvider === 'google' || input.geocoderProvider === 'google') {
-    throw badRequest('PROVIDER_UNAVAILABLE', 'Google providers are not configured yet; choose OSM Overpass and OSM Nominatim');
-  }
+  // 3. Providers: the screen greys out what cannot be used, but a request can be made by hand — refuse with the same reason.
+  const unavailable = providerUnavailable('places', input.placesProvider) ?? providerUnavailable('geocoding', input.geocoderProvider);
+  if (unavailable) throw badRequest('PROVIDER_UNAVAILABLE', `${unavailable}; choose an available data source`);
 
   // 4. References: the portfolio and city must exist, every category must be a seeded one (duplicates are collapsed, not rejected).
   const portfolio = await portfoliosQueries.summary(input.portfolioId);

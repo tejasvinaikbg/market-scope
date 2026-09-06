@@ -17,6 +17,12 @@ test('rejects a non-numeric port and names the variable', () => {
   assert.equal(r.error!.issues[0]!.path[0], 'PORT');
 });
 
+test('data sources: every switch defaults on, a blank Google key is no key, and only true/false are accepted', () => {
+  const env = Env.parse({ ...good, GOOGLE_PLACES_API_KEY: '', GOOGLE_GEOCODING_API_KEY: 'k' });
+  assert.deepEqual([env.OVERPASS_ENABLED, env.NOMINATIM_ENABLED, env.GOOGLE_PLACES_API_KEY, env.GOOGLE_GEOCODING_API_KEY], ['true', 'true', undefined, 'k']);
+  assert.equal(Env.safeParse({ ...good, GOOGLE_PLACES_ENABLED: 'maybe' }).success, false);
+});
+
 test('requires DATABASE_URL and NOMINATIM_USER_AGENT', () => {
   const missing = Env.safeParse({});
   assert.equal(missing.success, false);
