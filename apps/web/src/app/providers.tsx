@@ -11,7 +11,7 @@ import { ThemeProvider } from 'next-themes';
 export interface CurrentPortfolio { id: number; name: string; rowCount: number; withCoords: number; withoutCoords: number }
 
 const CurrentPortfolioContext = createContext<{ portfolio: CurrentPortfolio | null; setPortfolio: (p: CurrentPortfolio | null) => void }>({
-  portfolio: null, setPortfolio: () => {},                                 // the default is only seen outside <Providers>, which never happens
+  portfolio: null, setPortfolio: () => { },                                 // the default is only seen outside <Providers>, which never happens
 });
 
 /** The portfolio uploaded in this session, or null. Read by the stepper and the setup screen; set by the upload screen. */

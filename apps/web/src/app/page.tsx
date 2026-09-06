@@ -34,7 +34,7 @@ export default function Page() {
     <div className="grid grid-cols-1 md:min-h-[calc(100vh-8rem)] md:grid-cols-[1fr_300px]">
       <section className="p-4 md:p-8">
         <h1 className="text-3xl font-bold">Upload your portfolio</h1>
-        <p className="mt-2 max-w-xl text-muted">A CSV or XLSX of your own stores. Headers are validated before anything is accepted — nothing is written to the database until the file passes.</p>
+        <p className="mt-2 max-w-xl text-muted">A CSV or XLSX of your own stores. Headers are validated before anything is accepted — nothing is stored until the file passes.</p>
 
         {/* The drop zone. dragover must be prevented or the browser navigates to the file instead of dropping it. */}
         <div onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={onDrop}
