@@ -3,7 +3,17 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { bboxAreaSqKm, validateBbox, splitBbox, squareAround, pointInBbox } from '../src/geo.ts';
+import {
+  bboxAreaSqKm,
+  validateBbox,
+  splitBbox,
+  squareAround,
+  pointInBbox,
+  translateBbox,
+  bboxFromCorners,
+  padBbox,
+  bboxDimensionsKm,
+} from '../src/geo.ts';
 
 // Koramangala–HSR, roughly 5 km × 4 km.
 const blr = { south: 12.92, west: 77.60, north: 12.956, east: 77.646 };
@@ -47,4 +57,19 @@ test('squareAround yields the requested area, centred on the point', () => {
   const box = squareAround({ lat: 12.97, lng: 77.59 }, 30);
   assert.ok(Math.abs(bboxAreaSqKm(box) - 30) < 0.3);
   assert.ok(pointInBbox({ lat: 12.97, lng: 77.59 }, box));
+});
+
+
+test('translateBbox keeps the size, bboxFromCorners normalises any order, padBbox grows every side', () => {
+  const moved = translateBbox(blr, 0.01, -0.02);
+  assert.ok(Math.abs(bboxAreaSqKm(moved) - bboxAreaSqKm(blr)) < 0.01);
+  assert.equal(moved.north - moved.south, blr.north - blr.south);
+
+  const flipped = bboxFromCorners({ lat: 12.956, lng: 77.646 }, { lat: 12.92, lng: 77.60 });   // NE given first
+  assert.deepEqual(flipped, blr);
+  assert.equal(validateBbox(bboxFromCorners({ lat: 12.93, lng: 77.61 }, { lat: 12.95, lng: 77.64 })), null);
+
+  const padded = padBbox(blr, 1);
+  assert.ok(padded.south < blr.south && padded.north > blr.north && padded.west < blr.west && padded.east > blr.east);
+  assert.ok(Math.abs(bboxDimensionsKm(padded).heightKm - (bboxDimensionsKm(blr).heightKm + 2)) < 0.01);
 });

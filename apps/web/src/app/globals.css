@@ -53,4 +53,19 @@
     text-transform: uppercase;
     color: var(--muted);
   }
+
+  /* The boundary's drag handles on the map: corners resize, the centre moves. Leaflet positions them; we only draw them. */
+  .boundary-handle {
+    width: 12px;
+    height: 12px;
+    background: var(--accent);
+    border: 2px solid var(--surface);
+    box-shadow: 0 0 0 1px var(--accent);
+    cursor: nwse-resize;
+  }
+
+  .boundary-handle-move {
+    border-radius: 50%;
+    cursor: move;
+  }
 }

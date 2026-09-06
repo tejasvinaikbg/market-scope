@@ -1,15 +1,31 @@
 'use client';
-/** Map panel: header strip with the geocoder's bbox, the box as a dashed accent rectangle, the design's legend footer. */
-import { MapContainer, TileLayer, Rectangle, useMap } from 'react-leaflet';
-import { useEffect } from 'react';
+/**
+ * Map panel: the city outline as a dashed reference, the market boundary as a solid rectangle with five drag handles,
+ * and the design's legend. Geometry is not computed here — the handles call the shared maths and hand the result up.
+ */
+import { MapContainer, TileLayer, Rectangle, Marker, useMap } from 'react-leaflet';
+import L from 'leaflet';
+import { useEffect, useRef } from 'react';
 import { Square } from 'lucide-react';
-import type { Bbox } from '@market-scope/shared';
+import { bboxFromCorners, translateBbox, type Bbox, type LatLng } from '@market-scope/shared';
 import type { CityBounds } from '@/api/hooks';
 import 'leaflet/dist/leaflet.css';
 
 const toBounds = (b: Bbox): [[number, number], [number, number]] => [[b.south, b.west], [b.north, b.east]];
 
-/** Fits the camera when the box changes; keyed on values so refetches with equal bounds do not re-fit. */
+// Leaflet's default marker is an image that bundlers lose; a div with a class is styled in globals.css instead.
+const cornerIcon = L.divIcon({ className: 'boundary-handle', iconSize: [12, 12] });
+const centreIcon = L.divIcon({ className: 'boundary-handle boundary-handle-move', iconSize: [14, 14] });
+
+// The four corners: where the handle sits, and the opposite corner that stays fixed while it is dragged.
+const CORNERS = [
+  { key: 'sw', at: (b: Bbox): LatLng => ({ lat: b.south, lng: b.west }), anchor: (b: Bbox): LatLng => ({ lat: b.north, lng: b.east }) },
+  { key: 'se', at: (b: Bbox): LatLng => ({ lat: b.south, lng: b.east }), anchor: (b: Bbox): LatLng => ({ lat: b.north, lng: b.west }) },
+  { key: 'nw', at: (b: Bbox): LatLng => ({ lat: b.north, lng: b.west }), anchor: (b: Bbox): LatLng => ({ lat: b.south, lng: b.east }) },
+  { key: 'ne', at: (b: Bbox): LatLng => ({ lat: b.north, lng: b.east }), anchor: (b: Bbox): LatLng => ({ lat: b.south, lng: b.west }) },
+];
+
+/** Fits the camera when the city changes; keyed on values so refetches with equal bounds do not re-fit. */
 function Fit({ bbox }: { bbox: Bbox | null }) {
   const map = useMap();
   const key = bbox ? `${bbox.south},${bbox.west},${bbox.north},${bbox.east}` : '';
@@ -25,29 +41,61 @@ function Fit({ bbox }: { bbox: Bbox | null }) {
   return null;
 }
 
-export default function CityMap({ city, geocoder }: { city: CityBounds | null; geocoder: 'nominatim' | 'google' }) {
+/**
+ * The solid rectangle and its handles. Each drag remembers what was true at dragstart — the anchor corner, or the whole box
+ * and the grab point — and recomputes from that on every move, so a handle dragged past its anchor flips cleanly.
+ */
+function EditableBoundary({ boundary, onChange }: { boundary: Bbox; onChange: (b: Bbox) => void }) {
+  const start = useRef<{ box: Bbox; grab: LatLng; anchor: LatLng } | null>(null);
+  const centre: LatLng = { lat: (boundary.south + boundary.north) / 2, lng: (boundary.west + boundary.east) / 2 };
+  return (
+    <>
+      <Rectangle bounds={toBounds(boundary)} pathOptions={{ color: 'var(--accent)', weight: 2, fillOpacity: 0.08 }} />
+      {CORNERS.map(({ key, at, anchor }) => (
+        <Marker key={key} position={at(boundary)} icon={cornerIcon} draggable eventHandlers={{
+          dragstart: () => { start.current = { box: boundary, grab: at(boundary), anchor: anchor(boundary) }; },
+          drag: (e) => { if (start.current) onChange(bboxFromCorners(start.current.anchor, e.target.getLatLng())); },
+        }} />
+      ))}
+      <Marker position={centre} icon={centreIcon} draggable eventHandlers={{
+        dragstart: () => { start.current = { box: boundary, grab: centre, anchor: centre }; },
+        drag: (e) => {
+          if (!start.current) return;
+          const p = e.target.getLatLng();
+          onChange(translateBbox(start.current.box, p.lat - start.current.grab.lat, p.lng - start.current.grab.lng));
+        },
+      }} />
+    </>
+  );
+}
+
+export default function CityMap({ city, geocoder, boundary, onBoundaryChange }: {
+  city: CityBounds | null; geocoder: 'nominatim' | 'google'; boundary: Bbox | null; onBoundaryChange: (b: Bbox) => void;
+}) {
   const b = city?.bbox ?? null;
   return (
     <>
-      {/* Header strip only once there is a box to describe; before that the CTA already says "Select a city". */}
       {b && (
         <div className="caption flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line bg-surface px-4 py-3">
           <span className="flex items-center gap-2"><Square size={14} />
             {city!.name} · city boundary from {geocoder === 'nominatim' ? 'OSM Nominatim' : 'Google Geocoding'}
           </span>
+          {boundary && <span>Drag the corners to resize, the centre to move</span>}
         </div>
       )}
       <div className="min-h-0 flex-1">
         {!b && <div className="flex h-full items-center justify-center text-muted">Choose a country, state and city to see its boundary here.</div>}
         {b && <MapContainer center={[12.97, 77.59]} zoom={10} className="h-full w-full" scrollWheelZoom>
           <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://tile.openstreetmap.org/{z}/{x}/{y}.png" />
-          {b && <Rectangle bounds={toBounds(b)} pathOptions={{ color: 'var(--accent)', weight: 2, dashArray: '6 6', fillOpacity: 0.06 }} />}
+          <Rectangle bounds={toBounds(b)} pathOptions={{ color: 'var(--muted)', weight: 1, dashArray: '6 6', fill: false }} />   {/* the city: a reference, not editable */}
+          {boundary && <EditableBoundary boundary={boundary} onChange={onBoundaryChange} />}
           <Fit bbox={b} />
         </MapContainer>}
       </div>
       {b && (
         <div className="caption flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-line bg-surface px-4 py-3">
-          <span className="flex items-center gap-2"><span className="inline-block w-5 border-t-2 border-dashed border-accent" /> Discovery boundary</span>
+          <span className="flex items-center gap-2"><span className="inline-block w-5 border-t-2 border-accent" /> Discovery boundary</span>
+          <span className="flex items-center gap-2"><span className="inline-block w-5 border-t border-dashed border-muted" /> City boundary</span>
           {/* the two portfolio pins join the legend once there are portfolio stores to draw */}
         </div>
       )}

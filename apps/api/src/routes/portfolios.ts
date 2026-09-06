@@ -16,7 +16,8 @@ const MAX_MB = PORTFOLIO_LIMITS.maxFileBytes / 1024 / 1024;
 
 const Portfolio = z.object({ id: z.number(), name: z.string(), sourceFilename: z.string(), rowCount: z.number(), createdAt: z.string() }).openapi('Portfolio');
 const FileIssue = z.object({ row: z.number().optional(), column: z.string().optional(), message: z.string() }).openapi('FileIssue');
-const PortfolioSummary = Portfolio.extend({ withCoords: z.number(), withoutCoords: z.number() }).openapi('PortfolioSummary');
+const Bbox = z.object({ south: z.number(), west: z.number(), north: z.number(), east: z.number() });
+const PortfolioSummary = Portfolio.extend({ withCoords: z.number(), withoutCoords: z.number(), bounds: Bbox.nullable() }).openapi('PortfolioSummary');
 const UploadResult = PortfolioSummary.extend({ warnings: z.array(FileIssue) }).openapi('PortfolioUploadResult');
 const idParam = z.object({ id: z.coerce.number().int().positive() });
 

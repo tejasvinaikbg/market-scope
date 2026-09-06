@@ -3,11 +3,11 @@
  * service can pass a transaction and tests can pass the plain db.
  */
 import type { Knex } from 'knex';
-import type { PortfolioRowInput } from '@market-scope/shared';
+import type { Bbox, PortfolioRowInput } from '@market-scope/shared';
 import { db, type Db } from '../db/knex.ts';
 
 export interface PortfolioRow { id: number; name: string; sourceFilename: string; rowCount: number; createdAt: Date }
-export interface PortfolioSummary extends PortfolioRow { withCoords: number; withoutCoords: number }
+export interface PortfolioSummary extends PortfolioRow { withCoords: number; withoutCoords: number; bounds: Bbox | null }
 
 // The one place that knows this table's snake_case → camelCase.
 const toPortfolio = (r: Record<string, unknown>): PortfolioRow => ({
@@ -43,15 +43,21 @@ export const portfoliosQueries = {
     );
   },
 
-  /** The portfolio with the two counts the stepper and the dashboard show. COUNT(s.location) counts only non-NULL points. */
+  /** The portfolio with the counts the stepper shows and the extent of its located stores (ST_Extent: one box around them all). */
   async summary(id: number, k: Db = db): Promise<PortfolioSummary | null> {
     const r = await k('portfolios as p')
       .leftJoin('portfolio_stores as s', 's.portfolio_id', 'p.id')
       .where('p.id', id)
       .groupBy('p.id')
-      .select('p.*', k.raw('COUNT(s.location)::int AS with_coords'), k.raw('COUNT(s.id) FILTER (WHERE s.location IS NULL)::int AS without_coords'))
+      .select('p.*',
+        k.raw('COUNT(s.location)::int AS with_coords'),
+        k.raw('COUNT(s.id) FILTER (WHERE s.location IS NULL)::int AS without_coords'),
+        k.raw('ST_YMin(ST_Extent(s.location::geometry)) AS south, ST_XMin(ST_Extent(s.location::geometry)) AS west'),
+        k.raw('ST_YMax(ST_Extent(s.location::geometry)) AS north, ST_XMax(ST_Extent(s.location::geometry)) AS east'))
       .first();
-    return r ? { ...toPortfolio(r), withCoords: r.with_coords, withoutCoords: r.without_coords } : null;
+    if (!r) return null;
+    const bounds = r.south == null ? null : { south: r.south, west: r.west, north: r.north, east: r.east };   // no located store → NULLs
+    return { ...toPortfolio(r), withCoords: r.with_coords, withoutCoords: r.without_coords, bounds };
   },
 
   async list(k: Db = db): Promise<PortfolioRow[]> {

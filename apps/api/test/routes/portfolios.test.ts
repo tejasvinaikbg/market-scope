@@ -44,6 +44,10 @@ test('the sample file: 10 stores, 7 with coordinates, 3 to geocode, every catego
 
   const one = await (await fetch(`${base}/api/portfolios/${body.id}`)).json();
   assert.equal(one.withCoords, 7);
+  assert.ok(Math.abs(one.bounds.south - 12.9121) < 1e-6 && Math.abs(one.bounds.east - 77.7011) < 1e-6);   // HSR to Marathahalli
+  const [{ id: emptyId }] = await db('portfolios').insert({ name: 'test-empty', source_filename: 'x.csv', row_count: 0 }).returning('id');
+  created.push(emptyId);
+  assert.equal((await (await fetch(`${base}/api/portfolios/${emptyId}`)).json()).bounds, null);
   const list = await (await fetch(`${base}/api/portfolios`)).json();
   assert.ok(list.some((p: { id: number }) => p.id === body.id));
 });

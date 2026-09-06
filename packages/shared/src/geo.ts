@@ -75,3 +75,24 @@ export function squareAround(centre: LatLng, areaSqKm: number): Bbox {
 
 export const pointInBbox = (p: LatLng, b: Bbox): boolean =>
   p.lat >= b.south && p.lat <= b.north && p.lng >= b.west && p.lng <= b.east;
+
+
+/** Where a new market starts: a square of this area on the city centre — under the cap, so the form is usable at once. */
+export const DEFAULT_MARKET_AREA_SQ_KM = 24;
+
+/** Move the box by a delta in degrees — the centre handle. */
+export function translateBbox(b: Bbox, dLat: number, dLng: number): Bbox {
+  return { south: b.south + dLat, north: b.north + dLat, west: b.west + dLng, east: b.east + dLng };
+}
+
+/** The box with these two points as opposite corners, in any order — a corner handle dragged anywhere, including past its anchor. */
+export function bboxFromCorners(a: LatLng, b: LatLng): Bbox {
+  return { south: Math.min(a.lat, b.lat), north: Math.max(a.lat, b.lat), west: Math.min(a.lng, b.lng), east: Math.max(a.lng, b.lng) };
+}
+
+/** Grow the box by `km` on every side — "fit to the stores" wants a margin, not a box that clips the outermost pin. */
+export function padBbox(b: Bbox, km: number): Bbox {
+  const dLat = km / KM_PER_DEG_LAT;
+  const dLng = km / (KM_PER_DEG_LAT * Math.cos(toRad((b.north + b.south) / 2)));
+  return { south: b.south - dLat, north: b.north + dLat, west: b.west - dLng, east: b.east + dLng };
+}

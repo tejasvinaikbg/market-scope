@@ -1,15 +1,16 @@
 'use client';
 /**
- * Step 02 — Market setup: location → categories → data sources → boundary area → CTA, with the city map beside it.
+ * Step 02 — Market setup: location → categories → data sources → boundary → CTA, with the city map beside it.
  * This is the route file itself. It is a client component because it holds state, uses React Query hooks,
  * and loads the Leaflet map with `ssr: false`, which Next only allows inside client components.
- * This step reads the geocoded city box; the editable rectangle and "Create market" arrive with the markets API.
+ * The boundary is the user's: it starts as a legal square on the city centre and follows the handles on the map.
  */
 import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { Globe, Map, MapPin, ShoppingBag, Database, Maximize2, ArrowRight, Crosshair } from 'lucide-react';
-import { bboxAreaSqKm, bboxDimensionsKm, estimateDiscoveryCalls, MAX_MARKET_AREA_SQ_KM } from '@market-scope/shared';
-import { useLocations, useCategories, useCityBounds } from '@/api/hooks';
+import { Globe, Map, MapPin, ShoppingBag, Database, Maximize2, RotateCcw, ArrowRight, Crosshair } from 'lucide-react';
+import { bboxAreaSqKm, bboxDimensionsKm, estimateDiscoveryCalls, squareAround, padBbox, MAX_MARKET_AREA_SQ_KM, DEFAULT_MARKET_AREA_SQ_KM, type Bbox } from '@market-scope/shared';
+import { useLocations, useCategories, useCityBounds, usePortfolioSummary } from '@/api/hooks';
+import { useCurrentPortfolio } from '@/app/providers';
 import { Field } from '@/components/Field';
 
 const CityMap = dynamic(() => import('@/components/CityMap'), { ssr: false, loading: () => <div className="h-full bg-panel" /> });
@@ -23,16 +24,23 @@ export default function Page() {
   const [selected, setSelected] = useState<number[]>([]);
   const [places, setPlaces] = useState<'overpass' | 'google'>('overpass');
   const [geocoder, setGeocoder] = useState<'nominatim' | 'google'>('nominatim');
+  // The user's edits to the boundary, remembered per city so changing city starts fresh.
+  const [draft, setDraft] = useState<{ cityId: number; box: Bbox } | null>(null);
 
   const country = locations.data?.countries.find((c) => c.id === countryId) ?? null;
   const state = country?.states.find((s) => s.id === stateId) ?? null;
-  const bounds = useCityBounds(cityId);
-  const bbox = bounds.data?.bbox ?? null;
+  const city = useCityBounds(cityId).data ?? null;
+  const { portfolio } = useCurrentPortfolio();
+  const summary = usePortfolioSummary(portfolio?.id ?? null).data ?? null;
 
-  // Live numbers for the BOUNDARY AREA block, from the shared maths (same formula the server checks with PostGIS).
-  const area = useMemo(() => (bbox ? bboxAreaSqKm(bbox) : 0), [bbox]);
-  const dims = useMemo(() => (bbox ? bboxDimensionsKm(bbox) : null), [bbox]);
-  const calls = useMemo(() => (bbox ? estimateDiscoveryCalls(bbox) : 0), [bbox]);
+  // The boundary: the user's draft for this city, else a legal square on the city centre. Derived, so no effect is needed.
+  const boundary: Bbox | null = draft?.cityId === cityId ? draft.box : city ? squareAround(city.centre, DEFAULT_MARKET_AREA_SQ_KM) : null;
+  const setBoundary = (box: Bbox) => { if (cityId) setDraft({ cityId, box }); };
+
+  // Live numbers for the BOUNDARY AREA block, from the shared maths (the server measures again with PostGIS on create).
+  const area = useMemo(() => (boundary ? bboxAreaSqKm(boundary) : 0), [boundary]);
+  const dims = useMemo(() => (boundary ? bboxDimensionsKm(boundary) : null), [boundary]);
+  const calls = useMemo(() => (boundary ? estimateDiscoveryCalls(boundary) : 0), [boundary]);
   const over = area > MAX_MARKET_AREA_SQ_KM;
 
   const toggle = (id: number) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
@@ -95,29 +103,42 @@ export default function Page() {
           </div>
         )}
 
-        {bbox && (
+        {city && boundary && (
           <div className="space-y-2 border-t border-line pt-5">
             <div className="caption flex items-center gap-1.5"><Maximize2 size={14} /> Boundary area</div>
             <div className="flex items-baseline gap-2">
-              <span className={`text-4xl font-bold ${over ? 'text-bad' : ''}`}>{bbox ? Math.round(area).toLocaleString() : '—'}</span>
+              <span className={`text-4xl font-bold ${over ? 'text-bad' : ''}`}>{Math.round(area).toLocaleString()}</span>
               <span className="text-muted">km² / {MAX_MARKET_AREA_SQ_KM} km² cap</span>
             </div>
             <div className="h-1 w-full bg-line"><div className={`h-full ${over ? 'bg-bad' : 'bg-accent'}`} style={{ width: `${Math.min(100, (area / MAX_MARKET_AREA_SQ_KM) * 100)}%` }} /></div>
             {dims && <p className="text-xs text-muted">{dims.widthKm.toFixed(1)} × {dims.heightKm.toFixed(1)} km · ≈ {calls} calls</p>}
             {over && <p className="font-medium text-bad">Over the {MAX_MARKET_AREA_SQ_KM} km² cap — shrink the rectangle to continue.</p>}
+            {/* Two ways to reshape without dragging. Fit appears only when there are located stores to fit to. */}
+            <div className="flex flex-wrap gap-2 pt-1">
+              {summary?.bounds && (
+                <button type="button" onClick={() => setBoundary(padBbox(summary.bounds!, 0.5))}
+                  className="flex items-center gap-1.5 rounded border border-line bg-surface px-3 py-1.5 text-xs font-medium hover:border-muted">
+                  <Maximize2 size={12} /> Fit to portfolio stores
+                </button>
+              )}
+              <button type="button" onClick={() => setBoundary(city.bbox)}
+                className="flex items-center gap-1.5 rounded border border-line bg-surface px-3 py-1.5 text-xs font-medium hover:border-muted">
+                <RotateCcw size={12} /> Reset to city boundary
+              </button>
+            </div>
           </div>
         )}
 
         {/* The CTA appears only once the form is complete — the fields above already say what is missing. */}
         {cityId && selected.length > 0 && (
           <button type="button" disabled className="flex w-full items-center justify-between rounded border border-line px-4 py-3 font-semibold text-muted disabled:opacity-60">
-            Upload a portfolio first <ArrowRight size={16} />
+            {portfolio ? 'Create market' : 'Upload a portfolio first'} <ArrowRight size={16} />
           </button>
         )}
       </section>
 
       <section className="flex h-[50vh] flex-col md:h-auto">
-        <CityMap city={bounds.data ?? null} geocoder={geocoder} />
+        <CityMap city={city} geocoder={geocoder} boundary={boundary} onBoundaryChange={setBoundary} />
       </section>
     </div>
   );
