@@ -23,6 +23,7 @@ export type Market = {
   geocoding: { total: number; done: number; failed: number };
   placement: { inside: number; outside: number; unlocated: number };
   matched: number;
+  busy: boolean;                                                     // a run is in flight, or queued: nothing may change the market meanwhile
 };
 export type ProviderOption = { id: 'overpass' | 'nominatim' | 'google'; name: string; enabled: boolean; reason: 'not configured' | 'disabled' | null };
 export type Providers = { places: ProviderOption[]; geocoding: ProviderOption[] };
@@ -102,6 +103,17 @@ export const useMarketStores = (id: number | null, filters: StoreFilters, status
     placeholderData: keepPreviousData,
   });
 
+/** Rewrites a market's decisions and runs it again. On success it becomes the session's current market, queued. */
+export function useUpdateMarket() {
+  const client = useQueryClient();
+  const { setMarket } = useCurrentMarket();
+  return useMutation({
+    mutationFn: ({ id, input }: { id: number; input: CreateMarket }) =>
+      api<Market>(`/markets/${id}`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify(input) }),
+    onSuccess: (market) => { setMarket(market); client.setQueryData(['market', market.id], market); },
+  });
+}
+
 /** Queues discovery again for a finished market. The answer is the market, queued; the dashboard's polling takes it from there. */
 export function useRerunMarket(id: number | null) {
   const client = useQueryClient();
@@ -112,12 +124,12 @@ export function useRerunMarket(id: number | null) {
 }
 
 /** Deletes a market and everything found for it. The session forgets it if it was the current one; the list is re-read. */
-export function useDeleteMarket(id: number | null) {
+export function useDeleteMarket() {
   const client = useQueryClient();
   const { market, setMarket } = useCurrentMarket();
   return useMutation({
-    mutationFn: () => api<void>(`/markets/${id}`, { method: 'DELETE' }),
-    onSuccess: () => {
+    mutationFn: (id: number) => api<void>(`/markets/${id}`, { method: 'DELETE' }),
+    onSuccess: (_, id) => {
       if (market?.id === id) setMarket(null);
       client.removeQueries({ queryKey: ['market', id] });
       void client.invalidateQueries({ queryKey: ['markets'] });

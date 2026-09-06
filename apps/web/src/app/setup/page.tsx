@@ -5,20 +5,25 @@
  * and loads the Leaflet map with `ssr: false`, which Next only allows inside client components.
  * The boundary is the user's: it starts as a legal square on the city centre and follows the handles on the map.
  * "Create market" posts every decision; the server measures the boundary again and answers with the stored market.
+ * With ?market=<id> the same screen edits that market: every field starts from what it stored, and "Save and run again"
+ * rewrites the decisions, throws away what was found for the old ones, and queues the run.
  */
-import { useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Globe, Map, MapPin, ShoppingBag, Database, Maximize2, RotateCcw, ArrowRight, Crosshair, Loader } from 'lucide-react';
 import { bboxAreaSqKm, bboxDimensionsKm, estimateDiscoveryCalls, squareAround, padBbox, MAX_MARKET_AREA_SQ_KM, DEFAULT_MARKET_AREA_SQ_KM, type Bbox } from '@market-scope/shared';
-import { useLocations, useCategories, useCityBounds, usePortfolioSummary, useCreateMarket, useProviders } from '@/api/hooks';
+import { useLocations, useCategories, useCityBounds, usePortfolioSummary, useCreateMarket, useUpdateMarket, useMarket, useProviders } from '@/api/hooks';
 import { isApiError } from '@/api/client';
 import { useCurrentPortfolio } from '@/app/providers';
 import { Field } from '@/components/Field';
 
 const CityMap = dynamic(() => import('@/components/CityMap'), { ssr: false, loading: () => <div className="h-full bg-panel" /> });
 
-export default function Page() {
+function SetupScreen() {
+  // Editing? The market's id rides in the address; its stored decisions seed every field below, once.
+  const editId = Number(useSearchParams().get('market')) || null;
+  const editing = useMarket(editId);
   const locations = useLocations();
   const categories = useCategories();
   const providers = useProviders();                 // which data sources can be chosen right now
@@ -31,6 +36,19 @@ export default function Page() {
   const [geocoderChoice, setGeocoder] = useState<'nominatim' | 'google' | null>(null);
   // The user's edits to the boundary, remembered per city so changing city starts fresh.
   const [draft, setDraft] = useState<{ cityId: number; box: Bbox } | null>(null);
+  // Seed the form from the market being edited, once its row and the locations tree are both here. Never twice.
+  const seeded = useRef(false);
+  useEffect(() => {
+    const m = editing.data;
+    if (seeded.current || !m || !locations.data) return;
+    const home = locations.data.countries.flatMap((c) => c.states.map((s) => ({ country: c, state: s }))).find(({ state }) => state.cities.some((city) => city.id === m.cityId));
+    if (!home) return;
+    seeded.current = true;
+    setCountryId(home.country.id); setStateId(home.state.id); setCityId(m.cityId);
+    setSelected(m.categories.map((c) => c.id));
+    setPlaces(m.placesProvider); setGeocoder(m.geocoderProvider);
+    setDraft({ cityId: m.cityId, box: m.boundary });
+  }, [editing.data, locations.data]);
 
   // The data source in use: the user's pick, else the first the API says is available. The casts narrow the shared id union to each select's own.
   const firstAvailable = (options: Array<{ id: string; enabled: boolean }> | undefined) => options?.find((o) => o.enabled)?.id ?? null;
@@ -41,8 +59,10 @@ export default function Page() {
   const country = locations.data?.countries.find((c) => c.id === countryId) ?? null;
   const state = country?.states.find((s) => s.id === stateId) ?? null;
   const city = useCityBounds(cityId).data ?? null;
-  const { portfolio } = useCurrentPortfolio();
-  const summary = usePortfolioSummary(portfolio?.id ?? null).data ?? null;
+  // The portfolio: this session's upload, or, when editing, the one the market was made from.
+  const { portfolio: uploaded } = useCurrentPortfolio();
+  const portfolioId = editId ? editing.data?.portfolioId ?? null : uploaded?.id ?? null;
+  const summary = usePortfolioSummary(portfolioId).data ?? null;
 
   // The boundary: the user's draft for this city, else a legal square on the city centre. Derived, so no effect is needed.
   const boundary: Bbox | null = draft?.cityId === cityId ? draft.box : city ? squareAround(city.centre, DEFAULT_MARKET_AREA_SQ_KM) : null;
@@ -56,24 +76,28 @@ export default function Page() {
 
   const toggle = (id: number) => setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
-  // Create: every decision in one request; the server measures the boundary again. On success, on to the dashboard.
+  // Create or save: every decision in one request; the server measures the boundary again. On success, on to the dashboard.
   const router = useRouter();
   const create = useCreateMarket();
-  const ready = !!portfolio && !!boundary && !!cityId && selected.length > 0 && !over && sourcesAvailable;
+  const update = useUpdateMarket();
+  const saving = editId ? update : create;
+  const ready = portfolioId != null && !!boundary && !!cityId && selected.length > 0 && !over && sourcesAvailable;
   const onCreate = () => {
-    if (!portfolio || !boundary || !cityId) return;
-    create.mutate({ portfolioId: portfolio.id, cityId, categoryIds: selected, boundary, placesProvider: places, geocoderProvider: geocoder },
-      { onSuccess: (market) => router.push(`/dashboard/${market.id}`) });
+    if (portfolioId == null || !boundary || !cityId) return;
+    const input = { portfolioId, cityId, categoryIds: selected, boundary, placesProvider: places, geocoderProvider: geocoder };
+    const toDashboard = { onSuccess: (market: { id: number }) => router.push(`/dashboard/${market.id}`) };
+    if (editId) update.mutate({ id: editId, input }, toDashboard); else create.mutate(input, toDashboard);
   };
-  const createError = create.error && isApiError(create.error) ? create.error : null;
+  const createError = saving.error && isApiError(saving.error) ? saving.error : null;
 
   return (
     <div className="grid grid-cols-1 md:min-h-[calc(100vh-8rem)] md:grid-cols-[360px_1fr]">
       {/* Form first on a phone (the decisions), map beside it from 768 px */}
       <section className="space-y-6 border-b border-line bg-surface p-4 md:overflow-y-auto md:border-b-0 md:border-r md:p-6">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-bold"><Crosshair size={22} /> Define the market</h1>
-          <p className="mt-1 text-muted">Boundary and categories decide how much store discovery costs.</p>
+          <h1 className="flex items-center gap-2 text-2xl font-bold"><Crosshair size={22} /> {editId ? 'Edit the market' : 'Define the market'}</h1>
+          <p className="mt-1 text-muted">{editId ? 'Saving runs discovery again; what was found for the old boundary and categories is replaced.' : 'Boundary and categories decide how much store discovery costs.'}</p>
+          {editId && editing.isError && <div role="alert" className="mt-2 border border-bad bg-surface p-3 text-sm font-medium text-bad">This market could not be loaded.</div>}
         </div>
 
         {/* The reference data is the first thing this screen asks for; if that fails, nothing below can work, so say it here. */}
@@ -160,10 +184,10 @@ export default function Page() {
         {cityId && selected.length > 0 && (
           <div className="space-y-2">
             {createError && <div role="alert" className="border border-bad bg-surface p-3 text-sm font-medium text-bad">{createError.message}</div>}
-            {create.isError && !createError && <div role="alert" className="border border-bad bg-surface p-3 text-sm font-medium text-bad">Couldn't reach the service. Check your connection and try again.</div>}
-            <button type="button" disabled={!ready || create.isPending} onClick={onCreate}
+            {saving.isError && !createError && <div role="alert" className="border border-bad bg-surface p-3 text-sm font-medium text-bad">Couldn't reach the service. Check your connection and try again.</div>}
+            <button type="button" disabled={!ready || saving.isPending} onClick={onCreate}
               className={`flex w-full items-center justify-between rounded px-4 py-3 font-semibold disabled:opacity-60 ${ready ? 'bg-accent text-accent-fg' : 'border border-line text-muted'}`}>
-              {create.isPending ? <span className="flex items-center gap-2"><Loader size={16} className="animate-spin" /> Creating…</span> : portfolio ? 'Create market' : 'Upload a portfolio first'}
+              {saving.isPending ? <span className="flex items-center gap-2"><Loader size={16} className="animate-spin" /> {editId ? 'Saving…' : 'Creating…'}</span> : portfolioId == null ? 'Upload a portfolio first' : editId ? 'Save and run again' : 'Create market'}
               <ArrowRight size={16} />
             </button>
           </div>
@@ -175,4 +199,9 @@ export default function Page() {
       </section>
     </div>
   );
+}
+
+/** useSearchParams needs a Suspense boundary above it for the static build; the screen itself is unchanged by it. */
+export default function Page() {
+  return <Suspense fallback={<div className="p-6 text-muted">Loading…</div>}><SetupScreen /></Suspense>;
 }

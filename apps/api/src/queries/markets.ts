@@ -24,6 +24,7 @@ export interface MarketRow {
   geocoding: { total: number; done: number; failed: number };   // the portfolio's stores that needed locating, and how it went
   placement: { inside: number; outside: number; unlocated: number };   // where the portfolio's stores sit for this market
   matched: number;                                                     // how many of them were paired with a discovered store
+  busy: boolean;                                                       // a run is in flight: running, or a job queued for it — nothing may change it meanwhile
   storeCount: number;                                   // discovered so far; grows while discovery runs
   createdAt: Date;
 }
@@ -42,6 +43,7 @@ const SELECT_MARKET = `
          (SELECT COUNT(*) FROM market_portfolio_stores ps WHERE ps.market_id = m.id AND ps.placement = 'outside')::int AS placed_outside,
          (SELECT COUNT(*) FROM market_portfolio_stores ps WHERE ps.market_id = m.id AND ps.placement = 'unlocated')::int AS placed_unlocated,
          (SELECT COUNT(*) FROM market_portfolio_stores ps WHERE ps.market_id = m.id AND ps.matched_store_id IS NOT NULL)::int AS matched,
+         (m.status = 'running' OR EXISTS (SELECT 1 FROM jobs j WHERE j.market_id = m.id AND j.status IN ('pending', 'running'))) AS busy,
          COALESCE((SELECT json_agg(json_build_object('id', cat.id, 'slug', cat.slug, 'name', cat.name) ORDER BY cat.id)
                      FROM market_categories mc JOIN categories cat ON cat.id = mc.category_id WHERE mc.market_id = m.id), '[]') AS categories
     FROM markets m
@@ -55,7 +57,7 @@ const toMarket = (r: Record<string, any>): MarketRow => ({
   placesProvider: r.places_provider, geocoderProvider: r.geocoder_provider, categories: r.categories,
   status: r.status, error: r.error, startedAt: r.started_at, completedAt: r.completed_at, progress: r.progress, storeCount: r.store_count,
   geocoding: { total: r.geo_total, done: r.geo_done, failed: r.geo_failed },
-  placement: { inside: r.placed_inside, outside: r.placed_outside, unlocated: r.placed_unlocated }, matched: r.matched, createdAt: r.created_at,
+  placement: { inside: r.placed_inside, outside: r.placed_outside, unlocated: r.placed_unlocated }, matched: r.matched, busy: r.busy, createdAt: r.created_at,
 });
 
 export interface NewMarket {
@@ -80,6 +82,18 @@ export const marketsQueries = {
     }).returning('id');
     await k('market_categories').insert(m.categoryIds.map((category_id) => ({ market_id: row.id, category_id })));
     return row.id;
+  },
+
+  /** A market's decisions rewritten in place: the row and its category rows. The caller wraps this in a transaction. */
+  async update(id: number, m: NewMarket, k: Db): Promise<void> {
+    const b = m.boundary;
+    await k('markets').where({ id }).update({
+      name: m.name, portfolio_id: m.portfolioId, city_id: m.cityId, area_sq_km: m.areaSqKm,
+      places_provider: m.placesProvider, geocoder_provider: m.geocoderProvider,
+      boundary: k.raw('ST_MakeEnvelope(?, ?, ?, ?, 4326)', [b.west, b.south, b.east, b.north]),
+    });
+    await k('market_categories').where({ market_id: id }).del();
+    await k('market_categories').insert(m.categoryIds.map((category_id) => ({ market_id: id, category_id })));
   },
 
   async byId(id: number, k: Db = db): Promise<MarketRow | null> {

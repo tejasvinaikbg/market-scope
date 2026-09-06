@@ -7,6 +7,11 @@ import { db, type Db } from '../db/knex.ts';
 import type { DiscoveredPlace } from '../providers/places.ts';
 
 export const discoveryQueries = {
+  /** Everything found for the market, gone: what an edited boundary or category set makes stale. Pairs go with it (ON DELETE SET NULL). */
+  async clearForMarket(marketId: number, k: Db = db): Promise<void> {
+    await k('discovered_stores').where({ market_id: marketId }).del();
+  },
+
   /** Insert or update every place in one statement (UNNEST, like the portfolio import). tags travel as JSON text and are cast on the way in. */
   async upsertStores(marketId: number, provider: string, places: DiscoveredPlace[], k: Db = db): Promise<void> {
     if (places.length === 0) return;

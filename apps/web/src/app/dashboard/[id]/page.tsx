@@ -12,7 +12,7 @@ import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useDebounce } from 'use-debounce';
-import { Layers, Info, ArrowRight, ChevronLeft, Loader, Check, TriangleAlert, Search, MapPin, X, RotateCcw } from 'lucide-react';
+import { Layers, Info, ArrowRight, ChevronLeft, Loader, Check, TriangleAlert, Search, MapPin, X, RotateCcw, Pencil } from 'lucide-react';
 import { MATCH_DISTANCE_M } from '@market-scope/shared';
 import type { LatLng } from '@market-scope/shared';
 import { useMarket, useMarketStores, useRerunMarket, useDeleteMarket, type Market, type LayerFilter } from '@/api/hooks';
@@ -75,9 +75,10 @@ function Totals({ m }: { m: Market }) {
     ['Discovered', m.storeCount], ['Portfolio inside', m.placement.inside], ['Portfolio outside', m.placement.outside], ['Not located', m.placement.unlocated], ['Matched', m.matched],
   ];
   return (
-    <dl className="grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-5">
+    // Five cells in three columns; the last spans the slot that would otherwise be empty.
+    <dl className="grid grid-cols-3 gap-px border border-line bg-line">
       {cells.map(([label, n]) => (
-        <div key={label} className="bg-surface p-3"><dt className="caption">{label}</dt><dd className="mt-1 text-2xl font-bold">{n}</dd></div>
+        <div key={label} className="bg-surface p-3 last:col-span-2"><dt className="caption">{label}</dt><dd className="mt-1 text-2xl font-bold">{n}</dd></div>
       ))}
     </dl>
   );
@@ -117,7 +118,7 @@ export default function Page() {
   useEffect(() => { if (selected?.from === 'map') rowRefs.current.get(selected.id)?.scrollIntoView({ block: 'nearest' }); }, [selected]);
   // Run again and delete, neither while a run is in flight (the API refuses too). Delete asks twice.
   const rerun = useRerunMarket(marketId);
-  const remove = useDeleteMarket(marketId);
+  const remove = useDeleteMarket();
   const router = useRouter();
   const [confirmDelete, setConfirmDelete] = useState(false);
   const everyLayer = layers.length === ALL_LAYERS.length;
@@ -131,8 +132,12 @@ export default function Page() {
   const m = market.data;
   const started = m.status !== 'pending';
   const ended = m.status === 'ready' || m.status === 'partial';
-  const inFlight = m.status === 'pending' || m.status === 'running';
+  const inFlight = m.busy;                                  // running, or queued: the server refuses changes meanwhile, so the buttons hide
   const rows = layers.length ? stores.data?.stores ?? [] : [];
+  // The pair told from the discovered side too: which of the found stores are the user's own, by the portfolio stores' names.
+  // A found store can be the twin of several portfolio stores (two of yours 50 m apart), so each carries a list.
+  const yours = new Map<string, string[]>();
+  for (const s of rows) if (s.match) yours.set(s.match.id, [...(yours.get(s.match.id) ?? []), s.name]);
   const unlocated = stores.data?.unlocated ?? [];
   const total = stores.data ? stores.data.counts.discovered + stores.data.counts.portfolioInside + stores.data.counts.portfolioOutside : 0;
   const anything = total > 0 || unlocated.length > 0;      // the controls and the list appear once there is something to show
@@ -164,6 +169,7 @@ export default function Page() {
                   className="flex items-center gap-1.5 rounded border border-line bg-surface px-3 py-1.5 text-xs font-medium hover:border-muted disabled:opacity-60">
                   <RotateCcw size={12} /> {rerun.isPending ? 'Queueing…' : 'Run discovery again'}
                 </button>
+                <Link href={`/setup?market=${m.id}`} className="flex items-center gap-1.5 rounded border border-line bg-surface px-3 py-1.5 text-xs font-medium hover:border-muted"><Pencil size={12} /> Edit this market</Link>
                 {rerun.isError && <span role="alert" className="text-xs text-bad">{isApiError(rerun.error) ? rerun.error.message : "Couldn't reach the service."}</span>}
               </div>
             )}
@@ -217,7 +223,8 @@ export default function Page() {
                           </span>
                           <span className="flex shrink-0 flex-col items-end gap-1 pt-1">
                           <span className="caption flex items-center gap-1.5"><LayerSwatch layer={s.layer} /> {layerTag(s.layer)}</span>
-                          {s.match && <span className="caption flex items-center gap-1.5 text-map-match"><LayerSwatch layer="matched" /> Matched · {s.match.distanceM} m</span>}
+                          {s.match && <span className="caption flex max-w-48 items-center gap-1.5 text-map-match"><LayerSwatch layer="matched" /> <span className="truncate">Matched · {s.match.name} · {s.match.distanceM} m</span></span>}
+                          {yours.has(s.id) && <span className="caption flex max-w-48 items-center gap-1.5 text-map-match" title={`Yours: ${yours.get(s.id)!.join(', ')}`}><LayerSwatch layer="matched" /> <span className="truncate">Yours · {yours.get(s.id)!.join(', ')}</span></span>}
                         </span>
                         </button>
                       </li>
@@ -259,7 +266,7 @@ export default function Page() {
           {confirmDelete && (
             <div className="flex flex-wrap items-center gap-3 border border-bad bg-surface p-3 text-sm" role="alertdialog" aria-label="Delete this market?">
               <span>Delete this market and everything found for it?</span>
-              <button type="button" onClick={() => remove.mutate(undefined, { onSuccess: () => router.push('/dashboard') })} disabled={remove.isPending}
+              <button type="button" onClick={() => marketId && remove.mutate(marketId, { onSuccess: () => router.push('/dashboard') })} disabled={remove.isPending}
                 className="rounded bg-bad px-3 py-1.5 font-semibold text-white disabled:opacity-60">{remove.isPending ? 'Deleting…' : 'Delete'}</button>
               <button type="button" onClick={() => setConfirmDelete(false)} className="rounded border border-line px-3 py-1.5 font-medium">Keep it</button>
               {remove.isError && <span role="alert" className="text-bad">{isApiError(remove.error) ? remove.error.message : "Couldn't reach the service."}</span>}

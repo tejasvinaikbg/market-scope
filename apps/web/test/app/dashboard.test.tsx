@@ -30,10 +30,10 @@ const base = {
   id: 7, name: 'Bengaluru · sample', portfolioId: 1, portfolioName: 'sample', cityId: 1, cityName: 'Bengaluru',
   boundary: { south: 12.92, west: 77.6, north: 12.956, east: 77.646 }, areaSqKm: 19.8797, placesProvider: 'overpass', geocoderProvider: 'nominatim',
   categories: [supermarket, pharmacy], createdAt: '',
-  status: 'pending', error: null, startedAt: null, completedAt: null, storeCount: 0, progress: null, geocoding: { total: 3, done: 0, failed: 0 }, placement: { inside: 0, outside: 0, unlocated: 0 }, matched: 0,
+  status: 'pending', error: null, startedAt: null, completedAt: null, storeCount: 0, progress: null, geocoding: { total: 3, done: 0, failed: 0 }, placement: { inside: 0, outside: 0, unlocated: 0 }, matched: 0, busy: true,
 };
 const ready = {
-  status: 'ready', storeCount: 2, progress: { tiles: 4, done: 4, failed: 0 }, completedAt: '2026-09-06T10:00:00Z',
+  status: 'ready', busy: false, storeCount: 2, progress: { tiles: 4, done: 4, failed: 0 }, completedAt: '2026-09-06T10:00:00Z',
   geocoding: { total: 3, done: 2, failed: 1 }, placement: { inside: 1, outside: 1, unlocated: 1 },
 };
 const fresh = { id: 'd:1', layer: 'discovered', name: 'FreshMart Koramangala', category: supermarket, lat: 12.93, lng: 77.62, address: '80 Feet Road', source: 'overpass', match: null };
@@ -62,7 +62,7 @@ test('shows the market as the server stored it, queued: no totals, no controls y
 });
 
 test('running shows progress, the totals so far, and the stores found so far', async () => {
-  withMarket({ status: 'running', storeCount: 2, progress: { tiles: 4, done: 2, failed: 0 } }, { '': { stores: [fresh, apollo], unlocated: [], counts: { ...counts, portfolioInside: 0, portfolioOutside: 0, portfolioUnlocated: 0 } } });
+  withMarket({ status: 'running', busy: true, storeCount: 2, progress: { tiles: 4, done: 2, failed: 0 } }, { '': { stores: [fresh, apollo], unlocated: [], counts: { ...counts, portfolioInside: 0, portfolioOutside: 0, portfolioUnlocated: 0 } } });
   renderApp(<Page />);
   expect(await screen.findByRole('status')).toHaveTextContent('Discovering stores… 2 of 4 areas searched · 2 found so far');
   expect(await screen.findByText('FreshMart Koramangala')).toBeInTheDocument();
@@ -70,7 +70,7 @@ test('running shows progress, the totals so far, and the stores found so far', a
 });
 
 test('while the portfolio is being located, the page says so before discovery starts', async () => {
-  withMarket({ status: 'running', progress: null, geocoding: { total: 3, done: 1, failed: 1 } }, { '': none });
+  withMarket({ status: 'running', busy: true, progress: null, geocoding: { total: 3, done: 1, failed: 1 } }, { '': none });
   renderApp(<Page />);
   expect(await screen.findByRole('status')).toHaveTextContent('Locating your stores from their addresses… 2 of 3');
 });
@@ -81,13 +81,13 @@ test('ready, partial and failed each say what happened', async () => {
   expect(await screen.findByRole('status')).toHaveTextContent('71 stores discovered across 4 areas. 2 of 3 of your stores located from their address, 1 not found. 1 of your 10 stores inside the boundary, 8 outside, 1 without a location.');
   first.unmount();
 
-  withMarket({ status: 'partial', storeCount: 50, progress: { tiles: 4, done: 4, failed: 1 }, error: 'tile 2/4: overpass 504 from https://a/' }, { '': none });
+  withMarket({ status: 'partial', busy: false, storeCount: 50, progress: { tiles: 4, done: 4, failed: 1 }, error: 'tile 2/4: overpass 504 from https://a/' }, { '': none });
   const second = renderApp(<Page />);
   expect(await screen.findByRole('status')).toHaveTextContent('50 stores discovered; 1 of 4 areas could not be searched.');
   expect(screen.getByText('tile 2/4: overpass 504 from https://a/')).toBeInTheDocument();
   second.unmount();
 
-  withMarket({ status: 'failed', storeCount: 0, progress: { tiles: 4, done: 4, failed: 4 }, error: 'tile 1/4: down; …' }, { '': none });
+  withMarket({ status: 'failed', busy: false, storeCount: 0, progress: { tiles: 4, done: 4, failed: 4 }, error: 'tile 1/4: down; …' }, { '': none });
   renderApp(<Page />);
   expect(await screen.findByRole('status')).toHaveTextContent('Discovery failed. No area could be searched.');
 });
@@ -205,25 +205,29 @@ test('the open market becomes the session\'s market, so the stepper names it', a
 
 test('a store that found its twin: the fifth total, the sentence, the tag with the distance, and the chip that selects the pairs', async () => {
   const paired = { ...inside, match: { id: 'd:1', name: 'FreshMart Koramangala', distanceM: 127 } };
-  const withPair = { stores: [fresh, apollo, paired, outside], unlocated: [hsr], counts: { ...counts, matched: 1 } };
-  withMarket({ ...ready, matched: 1 }, { '': withPair, '?layers=matched': { stores: [paired], unlocated: [hsr], counts: { ...counts, matched: 1 } } });
+  const alsoPaired = { ...outside, match: { id: 'd:1', name: 'FreshMart Koramangala', distanceM: 140 } };   // two of yours, one twin
+  const withPair = { stores: [fresh, apollo, paired, alsoPaired], unlocated: [hsr], counts: { ...counts, matched: 2 } };
+  withMarket({ ...ready, matched: 2 }, { '': withPair, '?layers=matched': { stores: [paired, alsoPaired], unlocated: [hsr], counts: { ...counts, matched: 2 } } });
   renderApp(<Page />);
-  expect(await screen.findByRole('status')).toHaveTextContent('1 of them is a discovered store within 150 m.');
-  expect(screen.getAllByRole('definition').map((d) => d.textContent)).toEqual(['2', '1', '1', '1', '1']);
-  const row = screen.getByRole('button', { name: /Our Koramangala store/ });
+  expect(await screen.findByRole('status')).toHaveTextContent('2 of them are a discovered store within 150 m.');
+  expect(screen.getAllByRole('definition').map((d) => d.textContent)).toEqual(['2', '1', '1', '1', '2']);
+  const row = screen.getByRole('button', { name: /^Our Koramangala store/ });
   expect(row).toHaveTextContent('Portfolio · inside');
-  expect(row).toHaveTextContent('Matched · 127 m');
-  expect(screen.getByRole('button', { name: /Our Whitefield store/ })).not.toHaveTextContent('Matched');
+  expect(row).toHaveTextContent('Matched · FreshMart Koramangala · 127 m');                          // the twin, by name, and the distance
+  expect(screen.getByRole('button', { name: /^Our Whitefield store/ })).toHaveTextContent('Matched · FreshMart Koramangala · 140 m');
+  const twin = screen.getByRole('button', { name: /^FreshMart Koramangala/ });                        // and from the other side, both of them
+  expect(twin).toHaveTextContent('Yours · Our Koramangala store, Our Whitefield store');
+  expect(screen.getByRole('button', { name: /^Apollo Pharmacy/ })).not.toHaveTextContent('Yours');
   // only the pairs: every other chip off
   const chips = within(screen.getByText('Layers').parentElement!);
   for (const name of ['Discovered', 'Portfolio inside', 'Portfolio outside']) await userEvent.click(chips.getByRole('button', { name }));
   expect(chips.getByRole('button', { name: 'Matched ≤150 m' })).toHaveAttribute('aria-pressed', 'true');
-  expect(await screen.findByText('1 store shown · 4 in this market')).toBeInTheDocument();
-  expect(screen.getByTestId('map')).toHaveTextContent('p:1');
+  expect(await screen.findByText('2 stores shown · 4 in this market')).toBeInTheDocument();
+  expect(screen.getByTestId('map')).toHaveTextContent('p:1 p:2');
 });
 
 test('a finished market can be run again: the button posts, and the market comes back queued', async () => {
-  const spy = mockApi({ 'GET /api/markets/7': { body: { ...base, ...ready } }, 'GET /api/markets/7/stores': { body: all }, 'POST /api/markets/7/runs': { status: 202, body: { ...base, ...ready, status: 'pending', progress: null } } });
+  const spy = mockApi({ 'GET /api/markets/7': { body: { ...base, ...ready } }, 'GET /api/markets/7/stores': { body: all }, 'POST /api/markets/7/runs': { status: 202, body: { ...base, ...ready, status: 'pending', busy: true, progress: null } } });
   renderApp(<Page />);
   await userEvent.click(await screen.findByRole('button', { name: /Run discovery again/ }));
   expect(await screen.findByRole('status')).toHaveTextContent('Discovery is queued');
@@ -231,12 +235,19 @@ test('a finished market can be run again: the button posts, and the market comes
   expect(screen.queryByRole('button', { name: /Run discovery again/ })).not.toBeInTheDocument();   // not while it is queued
 });
 
+test('a finished market offers its edit, which is the setup screen with the market in the address', async () => {
+  withMarket(ready, { '': all });
+  renderApp(<Page />);
+  expect(await screen.findByRole('link', { name: /Edit this market/ })).toHaveAttribute('href', '/setup?market=7');
+});
+
 test('while a run is in flight there is no run-again and no delete', async () => {
-  withMarket({ status: 'running', storeCount: 1, progress: { tiles: 4, done: 1, failed: 0 } }, { '': none });
+  withMarket({ status: 'running', busy: true, storeCount: 1, progress: { tiles: 4, done: 1, failed: 0 } }, { '': none });
   renderApp(<Page />);
   await screen.findByRole('status');
   expect(screen.queryByRole('button', { name: /Run discovery again/ })).not.toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /Delete this market/ })).not.toBeInTheDocument();
+  expect(screen.queryByRole('link', { name: /Edit this market/ })).not.toBeInTheDocument();
 });
 
 test('delete asks twice, then removes the market and goes back to the list', async () => {

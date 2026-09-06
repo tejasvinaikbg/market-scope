@@ -8,7 +8,9 @@ import { useCurrentPortfolio } from '@/app/providers';
 import { renderApp, mockApi } from '../helpers';
 
 const mockPush = jest.fn();
-jest.mock('next/navigation', () => ({ usePathname: () => '/setup', useRouter: () => ({ push: mockPush }) }));
+let mockSearch = '';                                                   // '?market=7' puts the screen in edit mode
+jest.mock('next/navigation', () => ({ usePathname: () => '/setup', useRouter: () => ({ push: mockPush }), useSearchParams: () => new URLSearchParams(mockSearch) }));
+beforeEach(() => { mockSearch = ''; });
 jest.mock('@/components/CityMap', () => ({ __esModule: true, default: () => <div data-testid="map" /> }));   // Leaflet needs a real browser; __esModule so the dynamic import sees a default export
 
 const locations = { countries: [{ id: 1, name: 'India', states: [{ id: 1, name: 'Karnataka', cities: [{ id: 1, name: 'Bengaluru' }] }] }] };
