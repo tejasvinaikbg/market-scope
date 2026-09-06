@@ -48,6 +48,6 @@ test('malformed JSON is 400 INVALID_JSON, a thrown Error is 500 INTERNAL_SERVER_
 
 test('OpenAPI document lists every route and the shared error component', async () => {
   const doc = await (await fetch(`${base()}/api/openapi.json`)).json();
-  assert.deepEqual(Object.keys(doc.paths).sort(), ['/api/categories', '/api/cities/{id}/bbox', '/api/echo', '/api/health', '/api/locations', '/api/portfolios', '/api/portfolios/{id}']);
+  assert.deepEqual(Object.keys(doc.paths).sort(), ['/api/categories', '/api/cities/{id}/bbox', '/api/echo', '/api/health', '/api/locations', '/api/markets', '/api/markets/{id}', '/api/portfolios', '/api/portfolios/{id}']);
   assert.deepEqual(doc.components.schemas.EchoBody.required, ['name']);
 });
