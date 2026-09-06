@@ -3,7 +3,7 @@
  * Step 02 — Market setup: location → categories → data sources → boundary area → CTA, with the city map beside it.
  * This is the route file itself. It is a client component because it holds state, uses React Query hooks,
  * and loads the Leaflet map with `ssr: false`, which Next only allows inside client components.
- * This step reads the geocoded city box; the editable rectangle and "Create market" arrive with the markets API in Phase 3.
+ * This step reads the geocoded city box; the editable rectangle and "Create market" arrive with the markets API.
  */
 import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
@@ -108,7 +108,7 @@ export default function Page() {
           </div>
         )}
 
-        {/* The CTA appears only once the form is complete — the fields above already say what is missing. It becomes "Create market" in Phase 3. */}
+        {/* The CTA appears only once the form is complete — the fields above already say what is missing. */}
         {cityId && selected.length > 0 && (
           <button type="button" disabled className="flex w-full items-center justify-between rounded border border-line px-4 py-3 font-semibold text-muted disabled:opacity-60">
             Upload a portfolio first <ArrowRight size={16} />

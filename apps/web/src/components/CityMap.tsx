@@ -2,7 +2,7 @@
 /** Map panel: header strip with the geocoder's bbox, the box as a dashed accent rectangle, the design's legend footer. */
 import { MapContainer, TileLayer, Rectangle, useMap } from 'react-leaflet';
 import { useEffect } from 'react';
-import { Square, Move } from 'lucide-react';
+import { Square } from 'lucide-react';
 import type { Bbox } from '@market-scope/shared';
 import type { CityBounds } from '@/api/hooks';
 import 'leaflet/dist/leaflet.css';
@@ -35,7 +35,6 @@ export default function CityMap({ city, geocoder }: { city: CityBounds | null; g
           <span className="flex items-center gap-2"><Square size={14} />
             {geocoder === 'nominatim' ? 'OSM Nominatim' : 'Google Geocoding API'} bbox · {city!.name} — {b.south.toFixed(4)}, {b.west.toFixed(4)} → {b.north.toFixed(4)}, {b.east.toFixed(4)}
           </span>
-          <span className="flex items-center gap-2"><Move size={14} /> Rectangle editing arrives in Phase 3</span>
         </div>
       )}
       <div className="min-h-0 flex-1">
@@ -49,7 +48,7 @@ export default function CityMap({ city, geocoder }: { city: CityBounds | null; g
       {b && (
         <div className="caption flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-line bg-surface px-4 py-3">
           <span className="flex items-center gap-2"><span className="inline-block w-5 border-t-2 border-dashed border-accent" /> Discovery boundary</span>
-          {/* the two portfolio pins join the legend in Phase 2, when there are portfolio stores to draw */}
+          {/* the two portfolio pins join the legend once there are portfolio stores to draw */}
         </div>
       )}
     </>

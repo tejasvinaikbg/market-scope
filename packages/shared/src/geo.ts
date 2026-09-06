@@ -65,7 +65,7 @@ export function splitBbox(b: Bbox, tileKm: number): Bbox[] {
 
 export const estimateDiscoveryCalls = (b: Bbox, tileKm = DEFAULT_TILE_KM): number => splitBbox(b, tileKm).length;
 
-/** A square of the given area centred on a point — the default editable boundary in Phase 3. */
+/** A square of the given area centred on a point — the default editable boundary. */
 export function squareAround(centre: LatLng, areaSqKm: number): Bbox {
   const sideKm = Math.sqrt(areaSqKm);
   const dLat = sideKm / 2 / KM_PER_DEG_LAT;

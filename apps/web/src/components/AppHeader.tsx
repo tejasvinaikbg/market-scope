@@ -45,7 +45,7 @@ export function AppHeader() {
         <span className={`caption flex items-center gap-2 ${ui.text}`} role="status" aria-live="polite">
           {state === 'connecting'
             ? <Loader size={14} className="animate-spin" />
-            : <span className={`inline-block h-2 w-2 ${ui.dot}`} />}   {/* the small square in the design */}
+            : <span className={`inline-block h-2 w-2 ${ui.dot}`} />}
           {ui.label}
         </span>
         {mounted && (

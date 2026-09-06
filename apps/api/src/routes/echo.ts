@@ -1,5 +1,5 @@
 /**
- * Scaffold routes that prove validation and the 500 path work; deleted in Phase 2 when real routes exist.
+ * Scaffold routes kept for the HTTP contract tests: a validated POST and a route that throws, so the envelope and the 500 path stay tested.
  */
 import { Router } from 'express';
 import { z } from '../openapi/zod.ts';

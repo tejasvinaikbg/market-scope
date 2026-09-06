@@ -43,10 +43,14 @@
   --color-bad: var(--bad);
 }
 
-/* The design's uppercase, letter-spaced captions ("COUNTRY", "BOUNDARY AREA"). One class, used everywhere. */
-.caption {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
+/* The design's uppercase, letter-spaced captions ("COUNTRY", "BOUNDARY AREA"). One class, used everywhere.
+   In the components layer so a text-* utility on the same element wins: captions are muted by default,
+   but the active toggle button (text-accent-fg) and the status label (text-ok / text-bad) recolour them. */
+@layer components {
+  .caption {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
 }

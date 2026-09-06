@@ -1,4 +1,4 @@
-/** Step 03 placeholder: the design's empty-state banner, shown until a market exists (Phase 6 builds the dashboard). */
+/** Step 03 placeholder: the design's empty-state banner, shown until a market exists. */
 import Link from 'next/link';
 import { Info, ArrowRight } from 'lucide-react';
 
