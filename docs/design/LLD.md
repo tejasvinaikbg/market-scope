@@ -14,7 +14,7 @@ sequences that matter. The high-level companion is [HLD.md](HLD.md).
 | `apps/api/src/routes/*` | one router per resource; zod parses params, query and body; hands off, never decides |
 | `apps/api/src/services/*` | the rules: the market ladder, the upload's validate-then-store, run again, edit, delete |
 | `apps/api/src/queries/*` | every SQL statement, one file per table group; each takes the connection last so a transaction can be passed |
-| `apps/api/src/providers/*` | `Geocoder` and `PlacesProvider` interfaces; Nominatim, Overpass, their fixture twins; availability |
+| `apps/api/src/providers/*` | `Geocoder` and `PlacesProvider` interfaces; Nominatim, Google Geocoding, Overpass, Google Places (New), the fixture twins; one resolver rule for a market's choices; availability |
 | `apps/api/src/lib/http.ts` | the one outbound client: throttle (`p-throttle`), retry with backoff (`p-retry`), timeout, `User-Agent` |
 | `apps/api/src/jobs/*` | the queue runner and the four pipeline steps; `pipeline.ts` orders them |
 | `apps/api/src/openapi/*` | the registry the routes describe themselves into; the document served at `/api/docs` |
@@ -63,7 +63,7 @@ sequenceDiagram
   participant A as API
   participant D as Postgres
   participant W as Worker
-  participant X as Nominatim / Overpass
+  participant X as Nominatim or Google Geocoding / Overpass or Google Places
   B->>A: POST /api/markets (portfolio, city, categories, boundary, providers)
   A->>D: validate, ST_Area, insert market + job (one transaction)
   A-->>B: 201 market (pending)
@@ -73,11 +73,11 @@ sequenceDiagram
     A-->>B: status, progress, counts, stores so far
   end
   W->>D: claim job (FOR UPDATE SKIP LOCKED)
-  W->>X: locate address-only rows (bounded to the city, 1 req/s)
+  W->>X: locate address-only rows with the market's geocoder (inside the city's box)
   W->>D: place every portfolio store (ST_Covers)
   loop each grid cell
     W->>D: cached answer?
-    W->>X: else ask Overpass for the cell
+    W->>X: else ask the market's store source for the cell
     W->>D: keep what lies inside · upsert · progress
   end
   W->>D: match (ST_DWithin, same category) · set status
@@ -136,8 +136,9 @@ and `name ILIKE :q`; totals counted apart and never filtered.
 
 Cells are `GRID_CELL_DEG` (0.025°, about 2.8 km) squares aligned to the world, not to the market, so two markets that
 overlap share cells. A cell's key is its integer coordinates; the cache key is `(provider, cell, categories sorted)`.
-Overpass is asked for the whole cell and everything that comes back is cached; only what lies inside the market's
-rectangle is stored for the market. A cached answer older than `TILE_CACHE_HOURS` is asked for again and overwritten.
+The source is asked for the whole cell (Overpass in one query; Google in one query per place type, paged, a crowded
+cell split into quarters once) and everything that comes back is cached; only what lies inside the market's rectangle
+is stored for the market. A cached answer older than `TILE_CACHE_HOURS` is asked for again and overwritten.
 
 ## The web app
 

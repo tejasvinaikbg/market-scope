@@ -7,8 +7,12 @@ const provider = createFixturePlacesProvider(new URL('../../../fixtures/overpass
 const koramangala = { south: 12.92, west: 77.6, north: 12.956, east: 77.646 };
 
 test('filters by tile and by category', async () => {
-  const supermarkets = await provider.discover(koramangala, [{ categoryId: 1, slug: 'supermarket', selectors: [{ key: 'shop', value: 'supermarket' }] }]);
+  const supermarkets = await provider.discover(koramangala, [
+    { categoryId: 1, slug: 'supermarket', selectors: [{ key: 'shop', value: 'supermarket' }], googleTypes: [] },
+  ]);
   assert.deepEqual(supermarkets.map((p) => p.name).sort(), ['FreshMart Koramangala', 'More']); // "Far Away Mart" is outside the tile
-  const pharmacies = await provider.discover(koramangala, [{ categoryId: 2, slug: 'pharmacy', selectors: [{ key: 'amenity', value: 'pharmacy' }] }]);
+  const pharmacies = await provider.discover(koramangala, [
+    { categoryId: 2, slug: 'pharmacy', selectors: [{ key: 'amenity', value: 'pharmacy' }], googleTypes: [] },
+  ]);
   assert.deepEqual(pharmacies.map((p) => p.name).sort(), ['Apollo Pharmacy', 'Unnamed pharmacy']);
 });

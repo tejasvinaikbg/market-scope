@@ -47,7 +47,7 @@ export default defineConfig({
       command: `npx next dev -p ${WEB_PORT}`,
       cwd: 'apps/web',
       url: `http://localhost:${WEB_PORT}/`,
-      env: { API_URL: `http://localhost:${API_PORT}`, NEXT_DIST_DIR: '.next-e2e', NEXT_TELEMETRY_DISABLED: '1' },
+      env: { API_URL: `http://localhost:${API_PORT}`, NEXT_DIST_DIR: '.next-e2e', NEXT_TELEMETRY_DISABLED: '1', NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: '' }, // the OpenStreetMap ground: the run never calls Google
       reuseExistingServer: false,
       timeout: 120_000,
     },

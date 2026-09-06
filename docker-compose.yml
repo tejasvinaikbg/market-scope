@@ -70,6 +70,7 @@ services:
       args:
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-} # blank: the browser calls /api on this server, which forwards to the api service
         API_URL: http://api:4200 # the forward's target, compiled in at build time
+        NEXT_PUBLIC_GOOGLE_MAPS_API_KEY: ${NEXT_PUBLIC_GOOGLE_MAPS_API_KEY:-} # blank: the OpenStreetMap ground
     profiles: ['app']
     ports:
       - '${WEB_PORT:-3200}:3200'

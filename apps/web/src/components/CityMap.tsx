@@ -4,8 +4,9 @@
  * blue while it is drawn, red once it is over the cap — and the design's legend. Geometry is not computed here: the
  * handles call the shared maths and hand the result up; the colour asks the same maths the area figure uses.
  */
-import { MapContainer, TileLayer, Rectangle, Marker } from 'react-leaflet';
-import L from 'leaflet';
+import { MapContainer, Rectangle, Marker } from 'react-leaflet';
+import { BaseLayer } from './BaseLayer';
+import * as L from 'leaflet'; // namespace import: the ES build (see next.config) has no default export
 import { useRef } from 'react';
 import { Square } from 'lucide-react';
 import { bboxFromCorners, translateBbox, bboxAreaSqKm, MAX_MARKET_AREA_SQ_KM, type Bbox, type LatLng } from '@market-scope/shared';
@@ -104,10 +105,7 @@ export default function CityMap({
         {!b && <div className="flex h-full items-center justify-center text-muted">Choose a country, state and city to see its boundary here.</div>}
         {b && (
           <MapContainer center={[12.97, 77.59]} zoom={10} className="h-full w-full" scrollWheelZoom>
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
+            <BaseLayer />
             <Rectangle bounds={toBounds(b)} pathOptions={{ color: 'var(--map-muted)', weight: 1, dashArray: '6 6', fill: false }} />{' '}
             {/* the city: a reference, not editable; map colours never follow the theme */}
             {boundary && <EditableBoundary boundary={boundary} onChange={onBoundaryChange} />}

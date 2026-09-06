@@ -6,9 +6,10 @@ names the register row in [PRODUCTION.md](PRODUCTION.md) that would lift it.
 ## Scope
 
 - **Single user.** No authentication, no per-user data, no quotas. The brief assumes one user (row 16).
-- **Public OpenStreetMap services only.** Nominatim and Overpass on public mirrors, at their limit of one request per
-  second per process. That is the hard ceiling of the whole system: roughly one market every six seconds and one
-  address a second, for everyone. The Google providers are offered in configuration but not implemented (rows 9, 21).
+- **Public OpenStreetMap services by default.** Nominatim and Overpass on public mirrors, at their limit of one request
+  per second per process: roughly one market every six seconds and one address a second, for everyone. Google Places
+  (New) and Google Geocoding lift both sides for markets that choose them, at a price per request and behind a key;
+  a city's box still comes from Nominatim (rows 9, 21).
 - **Editing is a fresh run.** Editing a market rewrites its decisions, discards what was found and runs again. There is
   no diff, no history of earlier runs.
 

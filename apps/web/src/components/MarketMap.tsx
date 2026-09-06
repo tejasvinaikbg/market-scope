@@ -7,8 +7,9 @@
  * the same rows as the list. `selectedId` is the store picked in either view: its badge is larger and ringed, its label
  * stays open, and a click on any badge reports it up. `focus` is set only for a pick made in the list; the map moves to it.
  */
-import { MapContainer, TileLayer, Rectangle, Marker, Polyline, Tooltip, useMap } from 'react-leaflet';
-import L from 'leaflet';
+import { MapContainer, Rectangle, Marker, Polyline, Tooltip, useMap } from 'react-leaflet';
+import { BaseLayer } from './BaseLayer';
+import * as L from 'leaflet'; // namespace import: the ES build (see next.config) has no default export
 import { Check, createElement } from 'lucide';
 import { useEffect } from 'react';
 import type { Bbox, LatLng } from '@market-scope/shared';
@@ -81,10 +82,7 @@ export default function MarketMap({
     <>
       <div className="min-h-0 flex-1">
         <MapContainer center={[12.97, 77.59]} zoom={12} className="h-full w-full" scrollWheelZoom>
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+          <BaseLayer />
           {/* The tiles are light in both themes, so the map palette never changes with the theme; the boundary wears a white casing under the accent line. */}
           <Rectangle bounds={toBounds(boundary)} pathOptions={{ color: 'var(--map-surface)', weight: 7, fill: false, opacity: 0.9 }} interactive={false} />
           <Rectangle bounds={toBounds(boundary)} pathOptions={{ color: 'var(--map-accent)', weight: 3, fillOpacity: 0.05 }} interactive={false} />

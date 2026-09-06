@@ -24,12 +24,15 @@ with `JOBS=on` is pointed at the test database. Nothing should be.
 ## Fixtures
 
 `apps/api/fixtures/` holds the sample portfolio as CSV and XLSX, a failing CSV and XLSX for the validation paths, and the
-two provider answer files: `geocode.json` (city boxes and a few addresses) and `overpass.json` (six places around
-Koramangala, one of them 122 m from the sample's FreshMart so a matched pair exists). The same files serve offline use.
+provider answer files: `geocode.json` (city boxes and a few addresses), `overpass.json` (six places around Koramangala,
+one of them 122 m from the sample's FreshMart so a matched pair exists) and `google-places.json` (real Google answers for
+one Koramangala cell, recorded once and trimmed to the fields the field mask asks for, for the Google adapter's unit
+tests) and `google-geocode.json` (real Google Geocoding answers for the city, three sample addresses and a miss, for
+the Google geocoder's unit tests). The first two also serve offline use.
 
 ## Counts at the time of writing
 
-14 shared, 49 API unit, 45 API route, 51 web. Each lesson-sized change states the counts it expects.
+14 shared, 65 API unit, 49 API route, 53 web, 4 end-to-end runs (two flows on two viewports). Each lesson-sized change states the counts it expects.
 
 ## Coverage
 

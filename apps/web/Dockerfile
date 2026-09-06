@@ -12,8 +12,10 @@ COPY apps/web ./apps/web
 # Both are read when `next build` runs: NEXT_PUBLIC_API_URL is inlined into the browser bundle, and the /api rewrite's
 # target (API_URL) is compiled into the server, so it cannot be changed at start-up. The default is the compose network.
 ARG NEXT_PUBLIC_API_URL=
+ARG NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
 ARG API_URL=http://api:4200
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=$NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 ENV API_URL=$API_URL
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build --workspace apps/web

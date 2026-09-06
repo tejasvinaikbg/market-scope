@@ -25,7 +25,7 @@ set, and outlives the markets that filled it.
 | Table | Written by | Read by |
 |---|---|---|
 | `countries`, `states`, `cities` | seeds; `cities.bbox` by the first city lookup | the setup screen's selects; geocoding, to bound address lookups to the city |
-| `categories` | seeds | the setup screen; discovery, for the OpenStreetMap selectors |
+| `categories` | seeds, and one migration for the Google column | the setup screen; discovery, for the OpenStreetMap selectors and the Google place types |
 | `portfolios`, `portfolio_stores` | the upload, in one transaction after the whole file validates; geocoding fills `location` | placement, matching, the dashboard list |
 | `markets`, `market_categories` | create and edit; the pipeline updates status, progress, error | everything |
 | `discovered_stores` | discovery, upsert per grid cell; cleared by an edit | the dashboard, matching |

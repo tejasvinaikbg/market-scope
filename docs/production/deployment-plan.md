@@ -15,7 +15,7 @@ Environment: all defaults. Anything committed or shared says 5432.
 |---|---|---|
 | Database | managed Postgres with PostGIS; a pooler (PgBouncer or the provider's) | `DATABASE_URL` to the pooler, `DB_POOL_MAX=20` |
 | API | one container from `apps/api/Dockerfile` | `JOBS=off`, `TRUST_PROXY=1`, `CORS_ORIGIN=https://app.example.com`, `RATE_LIMIT_PER_MINUTE=120` |
-| Worker | one container from the same image, `node src/worker.ts` | `JOBS` irrelevant; `PLACES=overpass`, `NOMINATIM_USER_AGENT` a real contact |
+| Worker | one container from the same image, `node src/worker.ts` | `JOBS` irrelevant; `PLACES=live`, `NOMINATIM_USER_AGENT` a real contact |
 | Web | the standalone image from `apps/web/Dockerfile`, or a static host | `NEXT_PUBLIC_API_URL=https://api.example.com` |
 | Edge | a CDN or the host's proxy in front of both; TLS; `Cache-Control` honoured | — |
 | Observability | logs shipped from stdout; alerts on 5xx rate and on `/api/health` 503 | — |

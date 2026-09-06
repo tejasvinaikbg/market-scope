@@ -4,10 +4,11 @@
  */
 import type { Bbox } from '@market-scope/shared';
 import { db, type Db } from '../db/knex.ts';
-import type { CategorySearch } from '../providers/places.ts';
+import type { CategorySearch, PlacesChoice } from '../providers/places.ts';
+import type { GeocoderChoice } from '../providers/geocoder.ts';
 
-export type PlacesProvider = 'overpass' | 'google';
-export type GeocoderProvider = 'nominatim' | 'google';
+export type PlacesProvider = PlacesChoice; // what the market chose: the same two names the setup screen offers
+export type GeocoderProvider = GeocoderChoice; // likewise, for address lookup
 export type MarketStatus = 'pending' | 'running' | 'ready' | 'partial' | 'failed';
 /** How far discovery has got: areas (tiles) to search, searched, and searched without success. */
 export interface MarketProgress {
@@ -152,14 +153,14 @@ export const marketsQueries = {
     return rows.map(toMarket);
   },
 
-  /** The market's categories with their OSM search terms — what the places provider is asked for. */
+  /** The market's categories with their search terms for every source — what the places provider is asked for. */
   async categorySearches(marketId: number, k: Db = db): Promise<CategorySearch[]> {
     const rows = await k('market_categories as mc')
       .join('categories as c', 'c.id', 'mc.category_id')
       .where('mc.market_id', marketId)
       .orderBy('c.id')
-      .select('c.id', 'c.slug', 'c.osm_selectors');
-    return rows.map((r) => ({ categoryId: r.id, slug: r.slug, selectors: r.osm_selectors }));
+      .select('c.id', 'c.slug', 'c.osm_selectors', 'c.google_types');
+    return rows.map((r) => ({ categoryId: r.id, slug: r.slug, selectors: r.osm_selectors, googleTypes: r.google_types }));
   },
 
   async setProgress(id: number, progress: MarketProgress, k: Db = db): Promise<void> {

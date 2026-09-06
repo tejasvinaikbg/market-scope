@@ -5,7 +5,7 @@ import { buildOverpassQuery, toPlace, createOverpassProvider } from '../../../sr
 
 const tile = { south: 12.9, west: 77.6, north: 12.94, east: 77.65 };
 const categories = [
-  { categoryId: 1, slug: 'supermarket', selectors: [{ key: 'shop', value: 'supermarket' }] },
+  { categoryId: 1, slug: 'supermarket', selectors: [{ key: 'shop', value: 'supermarket' }], googleTypes: [] },
   {
     categoryId: 2,
     slug: 'pharmacy',
@@ -13,6 +13,7 @@ const categories = [
       { key: 'amenity', value: 'pharmacy' },
       { key: 'shop', value: 'chemist' },
     ],
+    googleTypes: [],
   },
 ];
 
@@ -24,7 +25,7 @@ test('the query has a node and a way clause per selector, inside the tile, and a
   assert.ok(q.includes('node["shop"="chemist"]'));
   assert.ok(q.endsWith(');out center tags;'));
   assert.ok(
-    buildOverpassQuery(tile, [{ categoryId: 9, slug: 'x', selectors: [{ key: 'name', value: 'Joe\'s "Mart" \\ Co' }] }]).includes(
+    buildOverpassQuery(tile, [{ categoryId: 9, slug: 'x', selectors: [{ key: 'name', value: 'Joe\'s "Mart" \\ Co' }], googleTypes: [] }]).includes(
       '"Joe\'s \\"Mart\\" \\\\ Co"',
     ),
   );

@@ -77,10 +77,12 @@ dbdiagram.io.
 ## Providers
 
 Address lookup and store discovery sit behind two interfaces, `Geocoder` and `PlacesProvider`, each a factory function.
-Today's implementations are Nominatim and Overpass, with a fixture twin of each that answers from JSON files for tests and
-offline use. The setup screen lists every provider with its availability, so a Google option shows as "not configured"
-until a key is set. All outbound calls go through one HTTP client that throttles to the mirrors' one request per second,
-identifies itself, times out and retries.
+Today's implementations are Nominatim and Google Geocoding for addresses, Overpass and Google Places (New) for stores, with
+a fixture twin of each kind that answers from JSON files for tests and offline use. A market chooses both sources on the
+setup screen, and each job asks a resolver for the market's choice (one rule, in `providers/resolve.ts`); the screen lists every provider with its availability, so a Google option
+shows as "not configured" until its key is set. All outbound calls go through one HTTP client that throttles per service
+(one request a second for the OpenStreetMap mirrors, ten for Google), identifies itself, times out and retries. The map's ground is OpenStreetMap tiles, or Google's map through Leaflet when
+the browser key is set; everything drawn on it is Leaflet either way.
 
 ## Conventions
 

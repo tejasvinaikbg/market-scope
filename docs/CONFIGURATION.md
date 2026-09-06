@@ -32,12 +32,12 @@ shared defaults.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `GEOCODER` | `nominatim` | `nominatim` (live) or `fixture` (offline, from `apps/api/fixtures/geocode.json`) |
-| `PLACES` | `overpass` | `overpass` (live) or `fixture` (offline, from `apps/api/fixtures/overpass.json`) |
+| `GEOCODER` | `live` | `live`: each market's own choice for its addresses, OSM Nominatim or Google Geocoding (a city's box is always looked up by Nominatim, once, before any market exists); `fixture`: offline, from `apps/api/fixtures/geocode.json` |
+| `PLACES` | `live` | `live`: each market's own choice, OSM Overpass or Google Places (New); `fixture`: offline, every market answered from `apps/api/fixtures/overpass.json` whatever it chose |
 | `NOMINATIM_USER_AGENT` | — | required; a real contact, as the mirrors' policy asks (they answer 406 to placeholders) |
 | `OVERPASS_URLS` | two public mirrors | comma-separated; a retry moves to the next one |
 | `OVERPASS_ENABLED`, `NOMINATIM_ENABLED` | `true` | switches; off means greyed out on the setup screen and refused by the API |
-| `GOOGLE_PLACES_API_KEY`, `GOOGLE_GEOCODING_API_KEY` | blank | not used yet; the providers are on the [roadmap](ROADMAP.md) |
+| `GOOGLE_PLACES_API_KEY`, `GOOGLE_GEOCODING_API_KEY` | blank | the server key; how to get and restrict one is in [GOOGLE-SETUP.md](GOOGLE-SETUP.md) |
 | `GOOGLE_PLACES_ENABLED`, `GOOGLE_GEOCODING_ENABLED` | `false` | their switches |
 
 ## Web
@@ -45,6 +45,7 @@ shared defaults.
 | Variable | Default | Meaning |
 |---|---|---|
 | `NEXT_PUBLIC_API_URL` | blank | read at build time; blank means the browser calls `/api` on the web server, which proxies to the API (local); deployed, the API's own URL |
+| `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | blank | read at build time; the browser key for the Google map (Maps JavaScript API, restricted by website), see [GOOGLE-SETUP.md](GOOGLE-SETUP.md); blank keeps the OpenStreetMap ground. The web app reads the root `.env` through `next.config.ts` |
 | `API_URL` | `http://localhost:4200` | where the web server's proxy forwards `/api/*`; compiled in at build time, so in the web image it is a build argument (default `http://api:4200`, the compose network) |
 
 ## In the containers

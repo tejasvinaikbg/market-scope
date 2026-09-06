@@ -1,0 +1,269 @@
+{
+  "supermarket": [
+    {
+      "id": "ChIJSxap2FQUrjsRJPDNEqaJ8h4",
+      "displayName": {
+        "text": "Xpress Home Needs",
+        "languageCode": "en"
+      },
+      "location": {
+        "latitude": 12.9255802,
+        "longitude": 77.6086426
+      },
+      "formattedAddress": "WJG5+6FJ, Tavarekere Main Rd, Tavarekere, Balaji Nagar, S.G. Palya, Bengaluru, Karnataka 560029, India",
+      "primaryType": "supermarket",
+      "types": [
+        "supermarket",
+        "grocery_store",
+        "food_store",
+        "food",
+        "store",
+        "point_of_interest",
+        "establishment"
+      ],
+      "businessStatus": "OPERATIONAL"
+    },
+    {
+      "id": "ChIJpZQxg2cUrjsR1Oz7J8SoNCg",
+      "displayName": {
+        "text": "Nature's Basket",
+        "languageCode": "en"
+      },
+      "location": {
+        "latitude": 12.933645799999999,
+        "longitude": 77.62285659999999
+      },
+      "formattedAddress": "9, 17th A Main Rd, KHB Colony, 5th Block, Koramangala, Bengaluru, Karnataka 560034, India",
+      "primaryType": "supermarket",
+      "types": [
+        "supermarket",
+        "grocery_store",
+        "food_store",
+        "food",
+        "store",
+        "point_of_interest",
+        "establishment"
+      ],
+      "businessStatus": "OPERATIONAL"
+    },
+    {
+      "id": "ChIJn6bxzGEUrjsRJTxSnjIBiXs",
+      "displayName": {
+        "text": "Reliance Fresh",
+        "languageCode": "en"
+      },
+      "location": {
+        "latitude": 12.9403664,
+        "longitude": 77.6200313
+      },
+      "formattedAddress": "Municipal No. 581/A (Pid No. 67-6-581/A Opp Bethany School Ground, Koramangala 8th Block, Koramangala, Bengaluru, Karnataka 560095, India",
+      "primaryType": "supermarket",
+      "types": [
+        "supermarket",
+        "grocery_store",
+        "food_store",
+        "food",
+        "store",
+        "point_of_interest",
+        "establishment"
+      ],
+      "businessStatus": "OPERATIONAL"
+    },
+    {
+      "id": "ChIJ796rjVIUrjsRz1bvhUEeG28",
+      "displayName": {
+        "text": "Village Hyper market",
+        "languageCode": "en"
+      },
+      "location": {
+        "latitude": 12.9328362,
+        "longitude": 77.6101115
+      },
+      "formattedAddress": "#1, Bharthi Plaza, 1st cross, SG Palya Main Rd, Tavarekere, Ramaiah Garden, Kaveri Layout, S.G. Palya, Bengaluru, Karnataka 560029, India",
+      "primaryType": "hypermarket",
+      "types": [
+        "hypermarket",
+        "supermarket",
+        "grocery_store",
+        "food_store",
+        "food",
+        "store",
+        "point_of_interest",
+        "establishment"
+      ],
+      "businessStatus": "OPERATIONAL"
+    }
+  ],
+  "pharmacy": [
+    {
+      "id": "ChIJFwy48mkVrjsRM--pbGSF46c",
+      "displayName": {
+        "text": "Wellness Forever Phamacy - 60 Feet Road, 5th Block, Koramangala",
+        "languageCode": "en"
+      },
+      "location": {
+        "latitude": 12.9369523,
+        "longitude": 77.6198988
+      },
+      "formattedAddress": "146, 60 Feet Rd, opposite to Shanti Sagar Hotel, KHB Colony, 5th Block, Koramangala, Bengaluru, Karnataka 560095, India",
+      "primaryType": "store",
+      "types": [
+        "drugstore",
+        "pharmacy",
+        "convenience_store",
+        "food_store",
+        "food",
+        "store",
+        "point_of_interest",
+        "health",
+        "service",
+        "establishment"
+      ],
+      "businessStatus": "OPERATIONAL"
+    },
+    {
+      "id": "ChIJm-brTcAVrjsReRANokNKTNQ",
+      "displayName": {
+        "text": "RAMDEV pharmacy",
+        "languageCode": "en"
+      },
+      "location": {
+        "latitude": 12.941468599999999,
+        "longitude": 77.6178773
+      },
+      "formattedAddress": "Koramangala 8th Block, Koramangala, Bengaluru, Karnataka 560095, India",
+      "primaryType": "pharmacy",
+      "types": [
+        "pharmacy",
+        "store",
+        "point_of_interest",
+        "health",
+        "establishment"
+      ],
+      "businessStatus": "OPERATIONAL"
+    },
+    {
+      "id": "ChIJedbfckUUrjsRazB5rNpsdMo",
+      "displayName": {
+        "text": "Apollo Pharmacy",
+        "languageCode": "en"
+      },
+      "location": {
+        "latitude": 12.936824999999999,
+        "longitude": 77.620588
+      },
+      "formattedAddress": "No.58, 5Th Cross, WJPC+Q7C, 58, 18th Main Rd, near Anand Sweets - Koramangala, KHB Colony, 6th Block, Koramangala, Bengaluru, Karnataka 560095, India",
+      "primaryType": "pharmacy",
+      "types": [
+        "pharmacy",
+        "drugstore",
+        "food_store",
+        "food",
+        "store",
+        "point_of_interest",
+        "health",
+        "establishment"
+      ],
+      "businessStatus": "OPERATIONAL"
+    }
+  ],
+  "drugstore": [
+    {
+      "id": "ChIJFwy48mkVrjsRM--pbGSF46c",
+      "displayName": {
+        "text": "Wellness Forever Phamacy - 60 Feet Road, 5th Block, Koramangala",
+        "languageCode": "en"
+      },
+      "location": {
+        "latitude": 12.9369523,
+        "longitude": 77.6198988
+      },
+      "formattedAddress": "146, 60 Feet Rd, opposite to Shanti Sagar Hotel, KHB Colony, 5th Block, Koramangala, Bengaluru, Karnataka 560095, India",
+      "primaryType": "store",
+      "types": [
+        "drugstore",
+        "pharmacy",
+        "convenience_store",
+        "food_store",
+        "food",
+        "store",
+        "point_of_interest",
+        "health",
+        "service",
+        "establishment"
+      ],
+      "businessStatus": "OPERATIONAL"
+    },
+    {
+      "id": "ChIJedbfckUUrjsRazB5rNpsdMo",
+      "displayName": {
+        "text": "Apollo Pharmacy",
+        "languageCode": "en"
+      },
+      "location": {
+        "latitude": 12.936824999999999,
+        "longitude": 77.620588
+      },
+      "formattedAddress": "No.58, 5Th Cross, WJPC+Q7C, 58, 18th Main Rd, near Anand Sweets - Koramangala, KHB Colony, 6th Block, Koramangala, Bengaluru, Karnataka 560095, India",
+      "primaryType": "pharmacy",
+      "types": [
+        "pharmacy",
+        "drugstore",
+        "food_store",
+        "food",
+        "store",
+        "point_of_interest",
+        "health",
+        "establishment"
+      ],
+      "businessStatus": "OPERATIONAL"
+    }
+  ],
+  "grocery_store": [
+    {
+      "id": "ChIJSxap2FQUrjsRJPDNEqaJ8h4",
+      "displayName": {
+        "text": "Xpress Home Needs",
+        "languageCode": "en"
+      },
+      "location": {
+        "latitude": 12.9255802,
+        "longitude": 77.6086426
+      },
+      "formattedAddress": "WJG5+6FJ, Tavarekere Main Rd, Tavarekere, Balaji Nagar, S.G. Palya, Bengaluru, Karnataka 560029, India",
+      "primaryType": "supermarket",
+      "types": [
+        "supermarket",
+        "grocery_store",
+        "food_store",
+        "food",
+        "store",
+        "point_of_interest",
+        "establishment"
+      ],
+      "businessStatus": "OPERATIONAL"
+    },
+    {
+      "id": "ChIJTQQ_FlMUrjsRAAAAMIbJQCs",
+      "displayName": {
+        "text": "Om Sri Sai Store",
+        "languageCode": "en"
+      },
+      "location": {
+        "latitude": 12.9302029,
+        "longitude": 77.6093214
+      },
+      "formattedAddress": "3, Ramayah Layout, Tavarekere, Krishna Murthi Layout, S.G. Palya, Bengaluru, Karnataka 560029, India",
+      "primaryType": "grocery_store",
+      "types": [
+        "grocery_store",
+        "food_store",
+        "food",
+        "store",
+        "point_of_interest",
+        "establishment"
+      ],
+      "businessStatus": "OPERATIONAL"
+    }
+  ]
+}

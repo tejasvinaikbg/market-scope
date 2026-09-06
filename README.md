@@ -129,15 +129,18 @@ images are built.
 | [Roadmap](docs/ROADMAP.md) | what comes next, in order |
 | [Production](docs/PRODUCTION.md) | the deployment plan by stage, each scaling limit with its options, and the upgrade register |
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | symptoms, causes and fixes for the things that go wrong locally |
+| [Google setup](docs/GOOGLE-SETUP.md) | getting and restricting the keys the Google providers need |
 | [Contributing](docs/CONTRIBUTING.md) | the conventions the code follows |
 
 ## Status
 
 Built and verified: upload, market setup, discovery with an in-database job queue and a tile cache, geocoding and
 placement, the dashboard with four layers, matching, run again, edit and delete; container images, a compose profile
-for the stack, CI. Test counts at the time of writing: 14 shared, 49 API unit, 45 API route, 51 web, 3 end-to-end.
+for the stack, CI; Google Places (New) and Google Geocoding as second sources, chosen per market, and the Google map, all behind keys
+([Google setup](docs/GOOGLE-SETUP.md)). Test counts at the time of writing: 14 shared, 65 API unit, 49 API route, 53 web,
+3 end-to-end.
 
-Not built yet: the Google Places and Geocoding providers, offered in the setup screen as "not configured". See the
+The map draws on Google once the browser key is set, and on OpenStreetMap tiles otherwise. What comes next is in the
 [roadmap](docs/ROADMAP.md).
 
 ## Data sources and attribution

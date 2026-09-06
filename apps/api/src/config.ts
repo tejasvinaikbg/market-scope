@@ -13,10 +13,11 @@ export const Env = z.object({
   PORT: z.coerce.number().int().min(1).max(65535).default(4200),
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error', 'fatal', 'trace', 'silent']).default('info'),
   DATABASE_URL: z.url(),
-  GEOCODER: z.enum(['nominatim', 'fixture']).default('nominatim'),
+  // Address lookup: live (Nominatim or Google, as each market chose; a city's box always by Nominatim) or fixture (offline, from apps/api/fixtures/geocode.json)
+  GEOCODER: z.enum(['live', 'fixture']).default('live'),
   NOMINATIM_USER_AGENT: z.string().min(1),
-  // Store discovery: overpass (live, free) or fixture (offline, from apps/api/fixtures/overpass.json). Mirrors rotate on retry.
-  PLACES: z.enum(['overpass', 'fixture']).default('overpass'),
+  // Store discovery: live (Overpass or Google, as each market chose) or fixture (offline, from apps/api/fixtures/overpass.json, whatever the market chose)
+  PLACES: z.enum(['live', 'fixture']).default('live'),
   JOBS: z.enum(['on', 'off']).default('on'),
   JOB_STALE_MINUTES: z.coerce.number().int().min(1).default(15), // a job still 'running' after this long is taken over (its worker died)
   TILE_CACHE_HOURS: z.coerce.number().min(0).default(24), // how long a grid cell's places answer is reused across markets; 0 = never

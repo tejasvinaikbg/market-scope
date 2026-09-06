@@ -8,7 +8,7 @@ Table cities {
   bbox geometry_polygon [note: 'the city box, looked up once']  centre geometry_point  bbox_fetched_at timestamptz
   indexes { (state_id, name) [unique] }
 }
-Table categories { id int [pk, increment]  slug text [not null, unique]  name text [not null]  osm_selectors jsonb [not null, note: 'OpenStreetMap tag selectors'] }
+Table categories { id int [pk, increment]  slug text [not null, unique]  name text [not null]  osm_selectors jsonb [not null, note: 'OpenStreetMap tag selectors']  google_types jsonb [not null, note: 'Google place types'] }
 
 Table portfolios { id int [pk, increment]  name text [not null]  source_filename text [not null]  row_count int [not null]  created_at timestamptz [not null, default: `now()`] }
 Table portfolio_stores {

@@ -1,0 +1,194 @@
+{
+  "Bengaluru, Karnataka, India": {
+    "status": "OK",
+    "results": [
+      {
+        "formatted_address": "Bengaluru, Karnataka, India",
+        "geometry": {
+          "location": {
+            "lat": 12.9628957,
+            "lng": 77.57754
+          },
+          "location_type": "APPROXIMATE",
+          "viewport": {
+            "northeast": {
+              "lat": 13.1424635,
+              "lng": 78.037506
+            },
+            "southwest": {
+              "lat": 12.77901,
+              "lng": 77.4598797
+            }
+          },
+          "bounds": {
+            "northeast": {
+              "lat": 13.1424635,
+              "lng": 77.7840638
+            },
+            "southwest": {
+              "lat": 12.8334905,
+              "lng": 77.4598797
+            }
+          }
+        },
+        "types": [
+          "locality",
+          "political"
+        ]
+      }
+    ]
+  },
+  "ITPL Main Road, Whitefield, Bengaluru, Karnataka, India": {
+    "status": "OK",
+    "results": [
+      {
+        "formatted_address": "ITPL Main Rd, Whitefield, Bengaluru, Karnataka, India",
+        "geometry": {
+          "location": {
+            "lat": 12.9865152,
+            "lng": 77.7440913
+          },
+          "location_type": "GEOMETRIC_CENTER",
+          "viewport": {
+            "northeast": {
+              "lat": 12.98754000000002,
+              "lng": 77.7504962
+            },
+            "southwest": {
+              "lat": 12.98434599999997,
+              "lng": 77.73722049999999
+            }
+          },
+          "bounds": {
+            "northeast": {
+              "lat": 12.98754000000002,
+              "lng": 77.7504962
+            },
+            "southwest": {
+              "lat": 12.98434599999997,
+              "lng": 77.73722049999999
+            }
+          }
+        },
+        "types": [
+          "route"
+        ]
+      }
+    ]
+  },
+  "24th Main Road, JP Nagar, Bengaluru, Karnataka, India": {
+    "status": "OK",
+    "results": [
+      {
+        "formatted_address": "24th Main Rd, J. P. Nagar, Bengaluru, Karnataka, India",
+        "geometry": {
+          "location": {
+            "lat": 12.9063462,
+            "lng": 77.5858066
+          },
+          "location_type": "GEOMETRIC_CENTER",
+          "viewport": {
+            "northeast": {
+              "lat": 12.91569620000002,
+              "lng": 77.58720513029151
+            },
+            "southwest": {
+              "lat": 12.89694879999997,
+              "lng": 77.5845071697085
+            }
+          },
+          "bounds": {
+            "northeast": {
+              "lat": 12.91569620000002,
+              "lng": 77.5860534
+            },
+            "southwest": {
+              "lat": 12.89694879999997,
+              "lng": 77.5856589
+            }
+          }
+        },
+        "types": [
+          "route"
+        ]
+      }
+    ]
+  },
+  "Dr Rajkumar Road, Rajajinagar, Bengaluru, Karnataka, India": {
+    "status": "OK",
+    "results": [
+      {
+        "formatted_address": "Dr Rajkumar Rd, Rajajinagar, Bengaluru, Karnataka, India",
+        "geometry": {
+          "location": {
+            "lat": 12.9936567,
+            "lng": 77.5560441
+          },
+          "location_type": "GEOMETRIC_CENTER",
+          "viewport": {
+            "northeast": {
+              "lat": 13.01264100000003,
+              "lng": 77.5602282
+            },
+            "southwest": {
+              "lat": 12.97503179999997,
+              "lng": 77.55229120000001
+            }
+          },
+          "bounds": {
+            "northeast": {
+              "lat": 13.01264100000003,
+              "lng": 77.5602282
+            },
+            "southwest": {
+              "lat": 12.97503179999997,
+              "lng": 77.55229120000001
+            }
+          }
+        },
+        "types": [
+          "route"
+        ]
+      }
+    ]
+  },
+  "No Such Road, Bengaluru, Karnataka, India": {
+    "status": "OK",
+    "results": [
+      {
+        "formatted_address": "Road, B Block, AECS Layout, Brookefield, Bengaluru, Karnataka 560037, India",
+        "geometry": {
+          "location": {
+            "lat": 12.967261,
+            "lng": 77.7160446
+          },
+          "location_type": "GEOMETRIC_CENTER",
+          "viewport": {
+            "northeast": {
+              "lat": 12.9686100802915,
+              "lng": 77.7174077302915
+            },
+            "southwest": {
+              "lat": 12.9659121197085,
+              "lng": 77.71470976970849
+            }
+          },
+          "bounds": {
+            "northeast": {
+              "lat": 12.9673409,
+              "lng": 77.7164193
+            },
+            "southwest": {
+              "lat": 12.9671813,
+              "lng": 77.71569819999999
+            }
+          }
+        },
+        "types": [
+          "route"
+        ],
+        "partial_match": true
+      }
+    ]
+  }
+}

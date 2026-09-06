@@ -10,6 +10,8 @@ Things that are wrong or surprising today, with what to expect and what would fi
   this reason; the same discipline applies to environments (rows 24 to 26).
 - **Overpass answers a timed-out query with HTTP 200 and a remark.** It is treated as transient and retried, which makes
   a busy mirror slow rather than wrong; a run can end `partial` with the cells named. "Run again" is the recovery.
+- **A city's box always comes from Nominatim.** It is looked up once per city, before any market exists to choose a
+  geocoder, and cached on the city row; only a market's addresses go to the geocoder it chose.
 - **Route test suites share one database and run one file at a time.** In parallel, the discovery suite's job runner
   drained other suites' queued jobs and polluted the tile cache about one run in four.
 - **The match distance label follows the shared default.** `MATCH_DISTANCE_M` overridden in the environment changes the

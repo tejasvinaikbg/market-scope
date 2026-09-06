@@ -30,7 +30,7 @@ before(async () => {
 });
 after(async () => {
   if (markets.length) await db('markets').whereIn('id', markets).del(); // stores and jobs go with them (ON DELETE CASCADE)
-  await db('place_tiles').where({ provider: 'fixture' }).del(); // the cache is shared with the dev database; fixture entries are ours to remove
+  await db('place_tiles').whereIn('provider', ['fixture', 'google']).del(); // what the suite cached under the test sources
   await db('portfolios').where({ id: portfolioId }).del();
   server.close();
   await db.destroy();
@@ -112,6 +112,43 @@ test('a cell answered for one market serves the next market that covers it; othe
   assert.deepEqual([second.cachedTiles, calls.length, second.stores], [6, 6, 4]); // no new calls; the same 4 stores
   const cached = await db('place_tiles').count('* as n').first();
   assert.ok(Number(cached?.n) >= 6);
+});
+
+test('a market that chose Google is answered by the Google provider; its rows and its cache entries say so', async () => {
+  const m = await createMarket();
+  await db('markets').where({ id: m.id }).update({ places_provider: 'google' }); // the request refuses the choice without a key; the job must still honour it
+  const google: PlacesProvider = {
+    id: 'google',
+    discover: async (tile, cats) => (await fixture.discover(tile, cats)).map((p) => ({ ...p, providerPlaceId: `g/${p.providerPlaceId}` })),
+  };
+  const asked: string[] = [];
+  const resolve = (choice: string) => {
+    asked.push(choice);
+    return choice === 'google' ? google : fixture;
+  };
+  const r = await discoverStores(m.id, { places: resolve, log: quiet, cacheHours: 24 });
+  assert.deepEqual([asked, r.stores, r.status], [['google'], 4, 'ready']);
+  assert.deepEqual(
+    (await stores(m.id)).map((s) => s.provider_place_id.slice(0, 2)),
+    ['g/', 'g/', 'g/', 'g/'],
+  );
+  assert.deepEqual(await db('discovered_stores').where({ market_id: m.id }).distinct('provider'), [{ provider: 'google' }]);
+  assert.equal(Number((await db('place_tiles').where({ provider: 'google' }).count('* as n').first())?.n), 6);
+});
+
+test('a market whose chosen source has lost its key fails at once with the reason, instead of retrying', async () => {
+  const m = await createMarket();
+  await db('markets').where({ id: m.id }).update({ places_provider: 'google' });
+  const unkeyed = (choice: string) => {
+    if (choice === 'google') throw new Error('Google Places API (New) is not configured: set GOOGLE_PLACES_API_KEY');
+    return fixture;
+  };
+  const r = await discoverStores(m.id, { places: unkeyed, log: quiet, cacheHours: 0 });
+  assert.deepEqual([r.status, r.tiles, r.stores], ['failed', 0, 0]);
+  await db('jobs').where({ market_id: m.id }).del(); // what the runner would have marked done; the worker is off in tests
+  const failed = await (await fetch(`${base}/api/markets/${m.id}`)).json();
+  assert.deepEqual([failed.status, failed.busy], ['failed', false]); // not stuck: it can be edited to another source and run again
+  assert.match(failed.error, /Google Places API \(New\) is not configured/);
 });
 
 test('the runner picks up the queued pipeline job and the market comes out ready', async () => {
