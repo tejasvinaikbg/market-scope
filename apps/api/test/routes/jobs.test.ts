@@ -31,6 +31,15 @@ test('a failing job is retried with a delay, and parked as failed after the last
   assert.equal(await runner.runOnce(), false);                                                                       // nothing due
 });
 
+test('a job left running by a dead worker is taken over once it is stale', async () => {
+  const id = await enqueue('test.stale');
+  await db('jobs').where({ id }).update({ status: 'running', attempts: 1, updated_at: db.raw("now() - interval '20 minutes'") });
+  assert.equal(await jobsQueries.claim(db, 60), null);                                                          // not stale yet at a 60-minute threshold
+  const reclaimed = await jobsQueries.claim(db, 15);
+  assert.deepEqual([reclaimed?.id, reclaimed?.status, reclaimed?.attempts], [id, 'running', 2]);
+  await jobsQueries.complete(id);
+});
+
 test('a job of a type nobody handles is parked at once, and a retry is not due before its time', async () => {
   const id = await enqueue('test.unknown');
   await createJobRunner({}).runOnce();
@@ -38,5 +47,5 @@ test('a job of a type nobody handles is parked at once, and a retry is not due b
   const later = await enqueue('test.later');
   await createJobRunner({ 'test.later': async () => { throw new Error('x'); } }, { retryDelayMs: () => 60_000 }).runOnce();
   assert.equal((await jobsQueries.byId(later))?.status, 'pending');
-  assert.equal(await createJobRunner({ 'test.later': async () => {} }).runOnce(), false);                           // run_after is a minute away
+  assert.equal(await createJobRunner({ 'test.later': async () => { } }).runOnce(), false);                           // run_after is a minute away
 });

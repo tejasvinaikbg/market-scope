@@ -23,6 +23,20 @@ test('GET /api/health has the contract shape and a consistent status', async () 
   assert.ok([200, 503].includes(res.status));
   assert.equal(body.db, res.status === 200);
   assert.equal(typeof body.version, 'string');
+  if (res.status === 200) assert.deepEqual(Object.keys(body.jobs).sort(), ['failed', 'pending', 'running']);   // queue depth rides along
+});
+
+test('reference data is cacheable; a rate limit answers with our envelope', async () => {
+  const cats = await fetch(`${base()}/api/categories`);
+  assert.equal(cats.headers.get('cache-control'), 'public, max-age=3600');
+  const tiny = buildApp({ RATE_LIMIT_PER_MINUTE: 2 }).listen(0);
+  const tinyBase = `http://localhost:${(tiny.address() as { port: number }).port}`;
+  try {
+    await fetch(`${tinyBase}/api/health`); await fetch(`${tinyBase}/api/health`);
+    const third = await fetch(`${tinyBase}/api/health`);
+    assert.equal(third.status, 429);
+    assert.equal((await third.json()).error.code, 'RATE_LIMITED');
+  } finally { tiny.close(); }
 });
 
 test('unknown route is a JSON 404 envelope', async () => {

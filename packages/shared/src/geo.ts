@@ -5,7 +5,8 @@ export interface LatLng { lat: number; lng: number }
 /** Product rules from the brief. */
 export const MAX_MARKET_AREA_SQ_KM = 30;
 export const MIN_MARKET_AREA_SQ_KM = 0.01;   // below ~100 m × 100 m it is a mis-drag, not a market
-export const DEFAULT_TILE_KM = 3;            // discovery splits the boundary into tiles of this size
+/** Discovery's grid: cells this many degrees on a side (≈ 2.8 km N–S, ≈ 2.7 km E–W near Bengaluru), aligned to the world, not to the boundary. */
+export const GRID_CELL_DEG = 0.025;
 
 const EARTH_RADIUS_KM = 6371.0088;
 const KM_PER_DEG_LAT = 111.32;
@@ -38,32 +39,27 @@ export function bboxDimensionsKm(b: Bbox): { widthKm: number; heightKm: number }
   return { widthKm: (b.east - b.west) * KM_PER_DEG_LAT * Math.cos(midLat), heightKm: (b.north - b.south) * KM_PER_DEG_LAT };
 }
 
+export interface GridCell { key: string; bbox: Bbox }
+
 /**
- * Split a bbox into a grid of tiles at most `tileKm` on a side, row-major (south→north, west→east).
- * The tile count is the number of places-API calls a discovery run will make — the "cost" the UI shows.
+ * The fixed-grid cells that cover a box, row-major (south→north, west→east). Cells are aligned to multiples of
+ * GRID_CELL_DEG from the equator and the prime meridian — not to the box — so two boundaries over the same streets share
+ * the same cells, which is what lets a cell's results be cached across markets. A cell can overhang the box; the caller
+ * filters results by the box. The cell count is the number of places-API calls a run makes: the "cost" the setup screen shows.
  */
-export function splitBbox(b: Bbox, tileKm: number): Bbox[] {
-  if (tileKm <= 0) throw new Error('tileKm must be positive');
-  const { widthKm, heightKm } = bboxDimensionsKm(b);
-  const cols = Math.max(1, Math.ceil(widthKm / tileKm));
-  const rows = Math.max(1, Math.ceil(heightKm / tileKm));
-  const dLat = (b.north - b.south) / rows;
-  const dLng = (b.east - b.west) / cols;
-  const tiles: Bbox[] = [];
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      tiles.push({
-        south: b.south + r * dLat,
-        north: r === rows - 1 ? b.north : b.south + (r + 1) * dLat,   // last row/col snap to the edge: no float gap
-        west: b.west + c * dLng,
-        east: c === cols - 1 ? b.east : b.west + (c + 1) * dLng,
-      });
+export function gridCells(b: Bbox, cellDeg = GRID_CELL_DEG): GridCell[] {
+  const first = (v: number) => Math.floor(v / cellDeg + 1e-9);          // 77.6 / 0.025 is 3103.9999… in floating point: nudge onto the line
+  const last = (v: number) => Math.floor(v / cellDeg - 1e-9);           // an edge exactly on a grid line does not start a new cell
+  const cells: GridCell[] = [];
+  for (let i = first(b.south); i <= last(b.north); i++) {
+    for (let j = first(b.west); j <= last(b.east); j++) {
+      cells.push({ key: `${i}:${j}`, bbox: { south: i * cellDeg, north: (i + 1) * cellDeg, west: j * cellDeg, east: (j + 1) * cellDeg } });
     }
   }
-  return tiles;
+  return cells;
 }
 
-export const estimateDiscoveryCalls = (b: Bbox, tileKm = DEFAULT_TILE_KM): number => splitBbox(b, tileKm).length;
+export const estimateDiscoveryCalls = (b: Bbox): number => gridCells(b).length;
 
 /** A square of the given area centred on a point — the default editable boundary. */
 export function squareAround(centre: LatLng, areaSqKm: number): Bbox {

@@ -3,17 +3,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import {
-  bboxAreaSqKm,
-  validateBbox,
-  splitBbox,
-  squareAround,
-  pointInBbox,
-  translateBbox,
-  bboxFromCorners,
-  padBbox,
-  bboxDimensionsKm,
-} from '../src/geo.ts';
+import { bboxAreaSqKm, validateBbox, squareAround, pointInBbox, translateBbox, bboxFromCorners, padBbox, bboxDimensionsKm, gridCells, estimateDiscoveryCalls } from '../src/geo.ts';
 
 // Koramangala–HSR, roughly 5 km × 4 km.
 const blr = { south: 12.92, west: 77.60, north: 12.956, east: 77.646 };
@@ -35,22 +25,16 @@ test('validateBbox names the rule that failed', () => {
   assert.match(validateBbox({ ...blr, east: NaN })!, /finite/);
 });
 
-test('splitBbox covers the box exactly: no gaps, no overshoot, areas add up', () => {
-  const tiles = splitBbox(blr, 3);
-  assert.equal(tiles.length, 4);                        // 5 km / 3 → 2 cols, 4 km / 3 → 2 rows
-  const union = {
-    south: Math.min(...tiles.map((t) => t.south)), north: Math.max(...tiles.map((t) => t.north)),
-    west: Math.min(...tiles.map((t) => t.west)), east: Math.max(...tiles.map((t) => t.east)),
-  };
-  assert.deepEqual(union, blr);
-  const summed = tiles.reduce((s, t) => s + bboxAreaSqKm(t), 0);
-  assert.ok(Math.abs(summed - bboxAreaSqKm(blr)) < 1e-6);
-  for (const t of tiles) assert.equal(validateBbox(t), null);
-});
-
-test('splitBbox returns one tile for a box smaller than the tile, and rejects a non-positive tile', () => {
-  assert.equal(splitBbox(blr, 50).length, 1);
-  assert.throws(() => splitBbox(blr, 0));
+test('gridCells covers the box with world-aligned cells, and two boxes over the same streets share keys', () => {
+  const cells = gridCells(blr);
+  assert.equal(cells.length, 6);                                          // 12.92–12.956 spans 3 rows of 0.025°, 77.60–77.646 spans 2 columns
+  assert.ok(cells.every((c) => validateBbox(c.bbox) === null));
+  const eps = 1e-9;                                                       // 3104 × 0.025 is 77.60000000000001 in floating point
+  assert.ok(cells[0]!.bbox.south <= blr.south + eps && cells.at(-1)!.bbox.north >= blr.north - eps);   // covered, with overhang
+  assert.ok(cells[0]!.bbox.west <= blr.west + eps && cells.at(-1)!.bbox.east >= blr.east - eps);
+  const nearby = gridCells({ south: 12.93, west: 77.61, north: 12.94, east: 77.62 });      // a smaller market inside the first
+  assert.ok(nearby.every((c) => cells.some((d) => d.key === c.key)));                       // its cells are a subset: cache hits
+  assert.equal(estimateDiscoveryCalls(blr), 6);
 });
 
 test('squareAround yields the requested area, centred on the point', () => {

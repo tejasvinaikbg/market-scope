@@ -3,6 +3,7 @@
  * job and marks it running, with FOR UPDATE SKIP LOCKED so two workers can never take the same row.
  */
 import { db, type Db } from '../db/knex.ts';
+import { config } from '../config.ts';
 
 export type JobStatus = 'pending' | 'running' | 'done' | 'failed';
 export interface JobRow {
@@ -21,13 +22,26 @@ export const jobsQueries = {
     return row.id;
   },
 
-  /** Take the oldest due job and mark it running, in one statement. SKIP LOCKED: a row another worker holds is passed over, not waited for. */
-  async claim(k: Db = db): Promise<JobRow | null> {
+  /**
+   * Take the oldest due job and mark it running, in one statement. SKIP LOCKED: a row another worker holds is passed over,
+   * not waited for. A job still 'running' after JOB_STALE_MINUTES belongs to a worker that died mid-run; it is due again.
+   */
+  async claim(k: Db = db, staleMinutes = config.JOB_STALE_MINUTES): Promise<JobRow | null> {
     const { rows } = await k.raw(`
       UPDATE jobs SET status = 'running', attempts = attempts + 1, updated_at = now()
-       WHERE id = (SELECT id FROM jobs WHERE status = 'pending' AND run_after <= now() ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
-       RETURNING *`);
+       WHERE id = (SELECT id FROM jobs
+                    WHERE (status = 'pending' AND run_after <= now())
+                       OR (status = 'running' AND updated_at < now() - (? * interval '1 minute'))
+                    ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
+       RETURNING *`, [staleMinutes]);
     return rows[0] ? toJob(rows[0]) : null;
+  },
+
+  /** How deep the queue is: what an operator or an autoscaler reads. */
+  async depth(k: Db = db): Promise<{ pending: number; running: number; failed: number }> {
+    const rows = await k('jobs').select('status').count('* as n').groupBy('status');
+    const by = Object.fromEntries(rows.map((r) => [r.status, Number(r.n)]));
+    return { pending: by.pending ?? 0, running: by.running ?? 0, failed: by.failed ?? 0 };
   },
 
   async complete(id: number, k: Db = db): Promise<void> {

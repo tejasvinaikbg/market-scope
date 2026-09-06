@@ -5,6 +5,7 @@ import { Router } from 'express';
 import { z } from '../openapi/zod.ts';
 import { registry, errorResponses } from '../openapi/registry.ts';
 import { listProviders } from '../providers/availability.ts';
+import { cacheFor } from '../middleware/cache-control.ts';
 
 const ProviderOption = z.object({
   id: z.enum(['overpass', 'nominatim', 'google']), name: z.string(), enabled: z.boolean(),
@@ -20,6 +21,6 @@ registry.registerPath({
 
 export function providersRouter() {
   const router = Router();
-  router.get('/providers', (_req, res) => { res.json(listProviders()); });
+  router.get('/providers', cacheFor(60), (_req, res) => { res.json(listProviders()); });   // configuration can change on a redeploy
   return router;
 }

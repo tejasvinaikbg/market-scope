@@ -10,6 +10,7 @@ import type { DiscoveredPlace, PlacesProvider } from './places.ts';
 export function createFixturePlacesProvider(path: string): PlacesProvider {
   let elements: Parameters<typeof toPlace>[0][] | undefined;
   return {
+    id: 'fixture',
     async discover(tile, categories) {
       elements ??= (JSON.parse(await readFile(path, 'utf8')) as { elements: Parameters<typeof toPlace>[0][] }).elements;
       return elements

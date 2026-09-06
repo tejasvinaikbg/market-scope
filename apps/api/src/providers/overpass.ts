@@ -67,6 +67,7 @@ export function createOverpassProvider(opts: OverpassOptions): PlacesProvider {
   }
 
   return {
+    id: 'overpass',
     async discover(tile, categories) {
       if (categories.length === 0) return [];
       const query = buildOverpassQuery(tile, categories);

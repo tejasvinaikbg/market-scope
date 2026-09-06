@@ -20,8 +20,22 @@ export const discoveryQueries = {
          SET name = EXCLUDED.name, category_id = EXCLUDED.category_id, location = EXCLUDED.location,
              address = EXCLUDED.address, tags = EXCLUDED.tags, updated_at = now()`,
       [marketId, provider, column('providerPlaceId'), column('name'), column('categoryId'), column('lat'), column('lng'),
-       column('address'), places.map((p) => JSON.stringify(p.tags))] as unknown as Knex.RawBinding[],
+        column('address'), places.map((p) => JSON.stringify(p.tags))] as unknown as Knex.RawBinding[],
     );
+  },
+
+  /** A cell's places from an earlier run — any market's — if fetched within maxAgeHours; null when there is none or it is too old. */
+  async cachedTile(provider: string, cellKey: string, categoriesKey: string, maxAgeHours: number, k: Db = db): Promise<DiscoveredPlace[] | null> {
+    if (maxAgeHours <= 0) return null;
+    const r = await k('place_tiles').where({ provider, cell_key: cellKey, categories_key: categoriesKey })
+      .andWhere('fetched_at', '>', k.raw(`now() - (? * interval '1 hour')`, [maxAgeHours])).first('places');
+    return r ? (r.places as DiscoveredPlace[]) : null;
+  },
+
+  /** Remember what the source answered for a cell, replacing an older answer. */
+  async cacheTile(provider: string, cellKey: string, categoriesKey: string, places: DiscoveredPlace[], k: Db = db): Promise<void> {
+    await k('place_tiles').insert({ provider, cell_key: cellKey, categories_key: categoriesKey, places: JSON.stringify(places), fetched_at: k.fn.now() })
+      .onConflict(['provider', 'cell_key', 'categories_key']).merge();
   },
 
   async countForMarket(marketId: number, k: Db = db): Promise<number> {

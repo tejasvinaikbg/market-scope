@@ -17,7 +17,15 @@ export const Env = z.object({
   NOMINATIM_USER_AGENT: z.string().min(1),
   // Store discovery: overpass (live, free) or fixture (offline, from apps/api/fixtures/overpass.json). Mirrors rotate on retry.
   PLACES: z.enum(['overpass', 'fixture']).default('overpass'),
-  JOBS: z.enum(['on', 'off']).default('on'),                              // off: the API answers but never runs discovery (tests, debugging)
+  JOBS: z.enum(['on', 'off']).default('on'),
+  JOB_STALE_MINUTES: z.coerce.number().int().min(1).default(15),         // a job still 'running' after this long is taken over (its worker died)
+  TILE_CACHE_HOURS: z.coerce.number().min(0).default(24),               // how long a grid cell's places answer is reused across markets; 0 = never
+  // Facing the internet: how many proxy hops sit in front (so rate limits see the client, not the balancer), which
+  // browser origin may call the API directly (blank = none: the Next rewrite proxies), and the per-client request rate (0 = off).
+  TRUST_PROXY: z.coerce.number().int().min(0).default(0),
+  CORS_ORIGIN: z.string().trim().optional().transform((v) => v || undefined),
+  RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(0).default(300),
+  DB_POOL_MAX: z.coerce.number().int().min(1).default(10),              // per process; raise behind a connection pooler                              // off: the API answers but never runs discovery (tests, debugging)
   OVERPASS_URLS: z.string().default('https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter').transform((v) => v.split(',').map((u) => u.trim()).filter(Boolean)),
   // Data sources: every provider has a switch; the Google ones also need a key. Off means greyed out on the screen and refused by the API.
   OVERPASS_ENABLED: z.enum(['true', 'false']).default('true'),
@@ -40,6 +48,12 @@ export const config = {
   NOMINATIM_USER_AGENT: env.NOMINATIM_USER_AGENT,
   PLACES: env.PLACES,
   JOBS: env.JOBS,
+  JOB_STALE_MINUTES: env.JOB_STALE_MINUTES,
+  TILE_CACHE_HOURS: env.TILE_CACHE_HOURS,
+  TRUST_PROXY: env.TRUST_PROXY,
+  CORS_ORIGIN: env.CORS_ORIGIN,
+  RATE_LIMIT_PER_MINUTE: env.RATE_LIMIT_PER_MINUTE,
+  DB_POOL_MAX: env.DB_POOL_MAX,
   OVERPASS_URLS: env.OVERPASS_URLS,
   OVERPASS_ENABLED: env.OVERPASS_ENABLED === 'true',
   NOMINATIM_ENABLED: env.NOMINATIM_ENABLED === 'true',

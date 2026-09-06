@@ -8,7 +8,7 @@ import { config } from '../config.ts'
 const knexConfig: Knex.Config = {
   client: 'pg',
   connection: config.DATABASE_URL,
-  pool: { min: 0, max: 10 },
+  pool: { min: 0, max: config.DB_POOL_MAX },   // per process; behind a pooler this can go up
   migrations: {
     directory: join(import.meta.dirname, 'migrations'),
     extension: 'ts',

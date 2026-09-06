@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { cacheFor } from '../middleware/cache-control.ts';
 import { z } from '../openapi/zod.ts'
 import { registry, errorResponses } from '../openapi/registry.ts'
 import { getCityBounds } from '../services/cities.ts'
@@ -30,7 +31,7 @@ registry.registerPath({
 
 export function citiesRouter() {
   const router = Router()
-  router.get('/cities/:id/bbox', async (req, res) => {
+  router.get('/cities/:id/bbox', cacheFor(86_400), async (req, res) => {       // a city's box does not move
     res.json(await getCityBounds(IdParam.parse(req.params).id))
   })
   return router

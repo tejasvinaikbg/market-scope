@@ -5,6 +5,7 @@ import { Router } from 'express'
 import { z } from '../openapi/zod.ts'
 import { registry, errorResponses } from '../openapi/registry.ts'
 import { locationsQueries } from '../queries/locations.ts'
+import { cacheFor } from '../middleware/cache-control.ts';
 import { xid } from 'zod';
 
 const City = z.object({ id: z.number(), name: z.string() }).openapi('City')
@@ -33,7 +34,7 @@ registry.registerPath({
 
 export function locationsRouter() {
   const router = Router()
-  router.get('/locations', async (_req, res) => {
+  router.get('/locations', cacheFor(3600), async (_req, res) => {
     res.json({ countries: await locationsQueries.locationTree() });
   })
   return router

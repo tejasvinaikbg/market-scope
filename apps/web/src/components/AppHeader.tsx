@@ -8,12 +8,13 @@ import { useQuery } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
 import { Sun, Moon, Loader } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { apiUrl } from '@/api/client';
 
 type Health = { healthy: boolean; db: boolean; version: string };
 
 /** 200 → healthy; 503 still carries a JSON body with db:false; a network failure throws and becomes `isError`. */
 async function fetchHealth(): Promise<Health> {
-  const res = await fetch('/api/health');
+  const res = await fetch(apiUrl('/health'));
   if (res.status !== 200 && res.status !== 503) throw new Error(`health ${res.status}`);
   return res.json();
 }

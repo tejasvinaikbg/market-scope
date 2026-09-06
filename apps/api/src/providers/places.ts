@@ -22,6 +22,8 @@ export interface DiscoveredPlace {
 }
 
 export interface PlacesProvider {
+  /** Which source this is. Cache entries and stored rows are keyed by it, so fixture answers never stand in for live ones. */
+  readonly id: 'overpass' | 'google' | 'fixture';
   /** Every store in the tile matching any of the categories. One tile is one request; tiling is the caller's job. */
   discover(tile: Bbox, categories: CategorySearch[]): Promise<DiscoveredPlace[]>;
 }
