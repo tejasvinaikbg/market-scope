@@ -51,6 +51,7 @@ const stores = (marketId: number) => db('discovered_stores').where({ market_id: 
 test('create queues one pipeline job and leaves the market pending with no stores', async () => {
   const m = await createMarket();
   assert.deepEqual([m.status, m.storeCount, m.error, m.progress], ['pending', 0, null, null]);
+  assert.deepEqual(m.placement, { inside: 0, outside: 0, unlocated: 0 });                             // nothing placed until the pipeline runs
   const jobs = await jobsQueries.forMarket(m.id);
   assert.deepEqual(jobs.map((j) => [j.type, j.status, j.payload]), [[MARKET_PIPELINE, 'pending', { marketId: m.id }]]);
 });

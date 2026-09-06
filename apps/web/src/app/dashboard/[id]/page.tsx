@@ -9,8 +9,12 @@ import Link from 'next/link';
 import { Layers, Info, ArrowRight, Loader, Check, TriangleAlert } from 'lucide-react';
 import { useMarket, type Market } from '@/api/hooks';
 
-/** How the portfolio's own stores fared, when any needed locating: appended to the finished states. */
+/** How the portfolio's own stores fared: located from their addresses when any needed it, then where they sit for this market. */
 const located = (g: Market['geocoding']) => (g.total === 0 ? '' : ` ${g.done} of ${g.total} of your stores located from their address${g.failed ? `, ${g.failed} not found` : ''}.`);
+const placed = (p: Market['placement']) => {
+  const total = p.inside + p.outside + p.unlocated;
+  return total === 0 ? '' : ` ${p.inside} of your ${total} stores inside the boundary, ${p.outside} outside${p.unlocated ? `, ${p.unlocated} without a location` : ''}.`;
+};
 
 /** What to say about discovery, per status. One place, so the words stay consistent. */
 function DiscoveryStatus({ m }: { m: Market }) {
@@ -32,7 +36,7 @@ function DiscoveryStatus({ m }: { m: Market }) {
         </div>
       );
     case 'ready':
-      return <p className="flex items-center gap-2 text-ok"><Check size={16} /> {m.storeCount} stores discovered{p ? ` across ${p.tiles} areas` : ''}.{located(g)}</p>;
+      return <p className="flex items-center gap-2 text-ok"><Check size={16} /> {m.storeCount} stores discovered{p ? ` across ${p.tiles} areas` : ''}.{located(g)}{placed(m.placement)}</p>;
     case 'partial':
       return (
         <div className="space-y-1">

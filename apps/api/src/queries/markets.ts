@@ -22,6 +22,7 @@ export interface MarketRow {
   status: MarketStatus; error: string | null; startedAt: Date | null; completedAt: Date | null;
   progress: MarketProgress | null;                      // null until discovery starts
   geocoding: { total: number; done: number; failed: number };   // the portfolio's stores that needed locating, and how it went
+  placement: { inside: number; outside: number; unlocated: number };   // where the portfolio's stores sit for this market
   storeCount: number;                                   // discovered so far; grows while discovery runs
   createdAt: Date;
 }
@@ -36,6 +37,9 @@ const SELECT_MARKET = `
          (SELECT COUNT(*) FROM portfolio_stores s WHERE s.portfolio_id = m.portfolio_id AND s.location_source IS DISTINCT FROM 'uploaded')::int AS geo_total,
          (SELECT COUNT(*) FROM portfolio_stores s WHERE s.portfolio_id = m.portfolio_id AND s.location_source = 'geocoded')::int AS geo_done,
          (SELECT COUNT(*) FROM portfolio_stores s WHERE s.portfolio_id = m.portfolio_id AND s.location IS NULL AND s.geocode_status IS NOT NULL)::int AS geo_failed,
+         (SELECT COUNT(*) FROM market_portfolio_stores ps WHERE ps.market_id = m.id AND ps.placement = 'inside')::int AS placed_inside,
+         (SELECT COUNT(*) FROM market_portfolio_stores ps WHERE ps.market_id = m.id AND ps.placement = 'outside')::int AS placed_outside,
+         (SELECT COUNT(*) FROM market_portfolio_stores ps WHERE ps.market_id = m.id AND ps.placement = 'unlocated')::int AS placed_unlocated,
          COALESCE((SELECT json_agg(json_build_object('id', cat.id, 'slug', cat.slug, 'name', cat.name) ORDER BY cat.id)
                      FROM market_categories mc JOIN categories cat ON cat.id = mc.category_id WHERE mc.market_id = m.id), '[]') AS categories
     FROM markets m
@@ -48,7 +52,8 @@ const toMarket = (r: Record<string, any>): MarketRow => ({
   boundary: { south: r.south, west: r.west, north: r.north, east: r.east }, areaSqKm: Number(r.area_sq_km),
   placesProvider: r.places_provider, geocoderProvider: r.geocoder_provider, categories: r.categories,
   status: r.status, error: r.error, startedAt: r.started_at, completedAt: r.completed_at, progress: r.progress, storeCount: r.store_count,
-  geocoding: { total: r.geo_total, done: r.geo_done, failed: r.geo_failed }, createdAt: r.created_at,
+  geocoding: { total: r.geo_total, done: r.geo_done, failed: r.geo_failed },
+  placement: { inside: r.placed_inside, outside: r.placed_outside, unlocated: r.placed_unlocated }, createdAt: r.created_at,
 });
 
 export interface NewMarket {

@@ -21,6 +21,7 @@ export type Market = {
   startedAt: string | null; completedAt: string | null; storeCount: number;
   progress: { tiles: number; done: number; failed: number } | null;
   geocoding: { total: number; done: number; failed: number };
+  placement: { inside: number; outside: number; unlocated: number };
 };
 export type ProviderOption = { id: 'overpass' | 'nominatim' | 'google'; name: string; enabled: boolean; reason: 'not configured' | 'disabled' | null };
 export type Providers = { places: ProviderOption[]; geocoding: ProviderOption[] };

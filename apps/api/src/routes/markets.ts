@@ -20,6 +20,7 @@ const Market = z.object({
   startedAt: z.string().nullable(), completedAt: z.string().nullable(), storeCount: z.number(),
   progress: z.object({ tiles: z.number(), done: z.number(), failed: z.number() }).nullable(),
   geocoding: z.object({ total: z.number(), done: z.number(), failed: z.number() }),
+  placement: z.object({ inside: z.number(), outside: z.number(), unlocated: z.number() }),
 }).openapi('Market');
 const CreateMarket = z.object({
   name: z.string().trim().min(1).max(120).optional(),
