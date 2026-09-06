@@ -1,6 +1,6 @@
 'use client';
 /** Data hooks, one per endpoint. Reference data never changes within a session (staleTime: Infinity). */
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
 import type { Bbox, LatLng, FileIssue } from '@market-scope/shared';
 import { api } from './client';
 import { useCurrentPortfolio, useCurrentMarket } from '@/app/providers';
@@ -26,6 +26,12 @@ export type Market = {
 export type ProviderOption = { id: 'overpass' | 'nominatim' | 'google'; name: string; enabled: boolean; reason: 'not configured' | 'disabled' | null };
 export type Providers = { places: ProviderOption[]; geocoding: ProviderOption[] };
 export type CreateMarket = { name?: string; portfolioId: number; cityId: number; categoryIds: number[]; boundary: Bbox; placesProvider: Market['placesProvider']; geocoderProvider: Market['geocoderProvider'] };
+export type StoreLayer = 'discovered' | 'portfolio_inside' | 'portfolio_outside';
+export type Store = { id: string; layer: StoreLayer; name: string; category: Category | null; lat: number; lng: number; address: string | null; source: string };
+export type UnlocatedStore = { id: string; name: string; category: Category | null; address: string | null; reason: 'not_found' | 'error' | null };
+export type StoreCounts = { discovered: number; portfolioInside: number; portfolioOutside: number; portfolioUnlocated: number };
+export type MarketStores = { stores: Store[]; unlocated: UnlocatedStore[]; counts: StoreCounts };
+export type StoreFilters = { layers?: StoreLayer[]; categories?: string[]; q?: string };
 
 export const useLocations = () => useQuery({ queryKey: ['locations'], queryFn: () => api<{ countries: Country[] }>('/locations'), staleTime: Infinity });
 export const useCategories = () => useQuery({ queryKey: ['categories'], queryFn: () => api<Category[]>('/categories'), staleTime: Infinity });
@@ -61,6 +67,31 @@ export const useMarket = (id: number | null) =>
     queryKey: ['market', id], queryFn: () => api<Market>(`/markets/${id}`), enabled: id != null,
     refetchInterval: (query) => (query.state.data && ['pending', 'running'].includes(query.state.data.status) ? 2000 : false),
     refetchIntervalInBackground: true,
+  });
+
+/** The stores path with its filters as the API reads them: comma lists, the search trimmed, nothing sent for "everything". */
+export function storesPath(id: number, f: StoreFilters) {
+  const parts: string[] = [];
+  if (f.layers?.length) parts.push(`layers=${f.layers.join(',')}`);
+  if (f.categories?.length) parts.push(`categories=${f.categories.join(',')}`);     // slugs are plain letters and underscores
+  const q = f.q?.trim();
+  if (q) parts.push(`q=${encodeURIComponent(q)}`);
+  return `/markets/${id}/stores${parts.length ? `?${parts.join('&')}` : ''}`;
+}
+
+/**
+ * The stores a market's dashboard draws, filtered by the API. Off until the market has started. While the run is in flight
+ * it re-reads every 2 s beside the market itself, so stores appear as they are found, and once more when the status changes,
+ * so the last areas searched are never missed. A new filter keeps the previous list on screen until its own answer arrives.
+ */
+export const useMarketStores = (id: number | null, filters: StoreFilters, status: Market['status'] | undefined) =>
+  useQuery({
+    queryKey: ['market-stores', id, storesPath(id ?? 0, filters), status],
+    queryFn: () => api<MarketStores>(storesPath(id!, filters)),
+    enabled: id != null && status != null && status !== 'pending',
+    refetchInterval: status === 'running' ? 2000 : false,
+    refetchIntervalInBackground: true,
+    placeholderData: keepPreviousData,
   });
 
 /** Creates the market from the setup screen's decisions. On success it becomes the session's current market. */

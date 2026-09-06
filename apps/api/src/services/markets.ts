@@ -9,6 +9,7 @@ import { marketsQueries, type PlacesProvider, type GeocoderProvider } from '../q
 import { portfoliosQueries } from '../queries/portfolios.ts';
 import { citiesQueries } from '../queries/cities.ts';
 import { categoriesQueries } from '../queries/categories.ts';
+import { storesQueries, type StoreFilters } from '../queries/stores.ts';
 import { providerUnavailable } from '../providers/availability.ts';
 import { jobsQueries } from '../queries/jobs.ts';
 
@@ -59,4 +60,11 @@ export async function getMarket(id: number) {
   const market = await marketsQueries.byId(id);
   if (!market) throw notFound('market');
   return market;
+}
+
+/** Everything the dashboard draws for one market: the filtered list, the unlocated portfolio stores, and the unfiltered totals. */
+export async function listMarketStores(id: number, filters: StoreFilters) {
+  await getMarket(id);                                                                 // 404 before any list work
+  const [stores, unlocated, counts] = await Promise.all([storesQueries.list(id, filters), storesQueries.unlocated(id), storesQueries.counts(id)]);
+  return { stores, unlocated, counts };
 }

@@ -3,15 +3,14 @@
  * Map panel: the city outline as a dashed reference, the market boundary as a solid rectangle with five drag handles,
  * and the design's legend. Geometry is not computed here — the handles call the shared maths and hand the result up.
  */
-import { MapContainer, TileLayer, Rectangle, Marker, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Rectangle, Marker } from 'react-leaflet';
 import L from 'leaflet';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { Square } from 'lucide-react';
 import { bboxFromCorners, translateBbox, type Bbox, type LatLng } from '@market-scope/shared';
 import type { CityBounds } from '@/api/hooks';
+import { Fit, toBounds } from './MapFit';
 import 'leaflet/dist/leaflet.css';
-
-const toBounds = (b: Bbox): [[number, number], [number, number]] => [[b.south, b.west], [b.north, b.east]];
 
 // Leaflet's default marker is an image that bundlers lose; a div with a class is styled in globals.css instead.
 const cornerIcon = L.divIcon({ className: 'boundary-handle', iconSize: [12, 12] });
@@ -24,22 +23,6 @@ const CORNERS = [
   { key: 'nw', at: (b: Bbox): LatLng => ({ lat: b.north, lng: b.west }), anchor: (b: Bbox): LatLng => ({ lat: b.south, lng: b.east }) },
   { key: 'ne', at: (b: Bbox): LatLng => ({ lat: b.north, lng: b.east }), anchor: (b: Bbox): LatLng => ({ lat: b.south, lng: b.west }) },
 ];
-
-/** Fits the camera when the city changes; keyed on values so refetches with equal bounds do not re-fit. */
-function Fit({ bbox }: { bbox: Bbox | null }) {
-  const map = useMap();
-  const key = bbox ? `${bbox.south},${bbox.west},${bbox.north},${bbox.east}` : '';
-  useEffect(() => {
-    if (!bbox) return;
-    const el = map.getContainer();
-    const fit = () => { map.invalidateSize(); map.fitBounds(toBounds(bbox), { padding: [24, 24] }); };
-    if (el.clientWidth > 0) { fit(); return; }
-    const ro = new ResizeObserver(() => { if (el.clientWidth > 0) { fit(); ro.disconnect(); } });   // dynamic import can mount at 0 px wide
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [map, key]); // eslint-disable-line react-hooks/exhaustive-deps
-  return null;
-}
 
 /**
  * The solid rectangle and its handles. Each drag remembers what was true at dragstart — the anchor corner, or the whole box
@@ -96,7 +79,6 @@ export default function CityMap({ city, geocoder, boundary, onBoundaryChange }: 
         <div className="caption flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-line bg-surface px-4 py-3">
           <span className="flex items-center gap-2"><span className="inline-block w-5 border-t-2 border-accent" /> Discovery boundary</span>
           <span className="flex items-center gap-2"><span className="inline-block w-5 border-t border-dashed border-muted" /> City boundary</span>
-          {/* the two portfolio pins join the legend once there are portfolio stores to draw */}
         </div>
       )}
     </>

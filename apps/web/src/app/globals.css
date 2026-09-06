@@ -68,4 +68,30 @@
     border-radius: 50%;
     cursor: move;
   }
+
+  /* Store markers on the dashboard map: a round badge whose colour is the layer, holding the category's icon. */
+  .store-pin {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 2px solid var(--surface);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+  }
+
+  .store-pin-discovered {
+    background: var(--muted);
+    color: var(--surface);
+  }
+
+  .store-pin-inside {
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  .store-pin-outside {
+    background: var(--surface);
+    color: var(--accent);
+    border: 2px dashed var(--accent);
+  }
 }
