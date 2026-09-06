@@ -1,6 +1,7 @@
 /**
  * The only module that reads process.env. Loads .env, validates every variable with zod at startup, and exports typed values.
  */
+import { MATCH_DISTANCE_M } from '@market-scope/shared';
 import { join } from 'node:path';
 import dotenv from 'dotenv';
 import { z } from "./openapi/zod.ts";
@@ -20,6 +21,7 @@ export const Env = z.object({
   JOBS: z.enum(['on', 'off']).default('on'),
   JOB_STALE_MINUTES: z.coerce.number().int().min(1).default(15),         // a job still 'running' after this long is taken over (its worker died)
   TILE_CACHE_HOURS: z.coerce.number().min(0).default(24),               // how long a grid cell's places answer is reused across markets; 0 = never
+  MATCH_DISTANCE_M: z.coerce.number().positive().default(MATCH_DISTANCE_M),   // the shared default, so the screen's label and the rule agree
   // Facing the internet: how many proxy hops sit in front (so rate limits see the client, not the balancer), which
   // browser origin may call the API directly (blank = none: the Next rewrite proxies), and the per-client request rate (0 = off).
   TRUST_PROXY: z.coerce.number().int().min(0).default(0),
@@ -50,6 +52,7 @@ export const config = {
   JOBS: env.JOBS,
   JOB_STALE_MINUTES: env.JOB_STALE_MINUTES,
   TILE_CACHE_HOURS: env.TILE_CACHE_HOURS,
+  MATCH_DISTANCE_M: env.MATCH_DISTANCE_M,
   TRUST_PROXY: env.TRUST_PROXY,
   CORS_ORIGIN: env.CORS_ORIGIN,
   RATE_LIMIT_PER_MINUTE: env.RATE_LIMIT_PER_MINUTE,

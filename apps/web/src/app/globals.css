@@ -21,6 +21,7 @@
   --map-accent-fg: #ffffff;
   --map-muted: #6f6a63;
   --map-surface: #ffffff;
+  --map-match: #2e7d4f;      /* a portfolio store that found its discovered twin */
   --map-draft: #2563eb;      /* the boundary while it is being drawn on the setup screen */
   --map-over: #dc2626;       /* the same boundary once it is larger than the cap */
 }
@@ -53,6 +54,7 @@
   --color-map-accent-fg: var(--map-accent-fg);
   --color-map-muted: var(--map-muted);
   --color-map-surface: var(--map-surface);
+  --color-map-match: var(--map-match);
   --color-map-draft: var(--map-draft);
   --color-map-over: var(--map-over);
 }
@@ -106,6 +108,22 @@
 
 .store-pin svg {
   display: block;
+}
+
+/* A store that found its discovered twin wears a small check on green at its shoulder, over the badge's own colour. */
+.store-pin-check {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: flex;
+  width: 14px;
+  height: 14px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1.5px solid var(--map-surface);
+  background: var(--map-match);
+  color: var(--map-surface);
 }
 
 /* The picked store: a ring in the accent with a white gap, outside the badge, so the badge's own colour still says the

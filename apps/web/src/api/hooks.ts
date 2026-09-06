@@ -22,16 +22,21 @@ export type Market = {
   progress: { tiles: number; done: number; failed: number } | null;
   geocoding: { total: number; done: number; failed: number };
   placement: { inside: number; outside: number; unlocated: number };
+  matched: number;
 };
 export type ProviderOption = { id: 'overpass' | 'nominatim' | 'google'; name: string; enabled: boolean; reason: 'not configured' | 'disabled' | null };
 export type Providers = { places: ProviderOption[]; geocoding: ProviderOption[] };
 export type CreateMarket = { name?: string; portfolioId: number; cityId: number; categoryIds: number[]; boundary: Bbox; placesProvider: Market['placesProvider']; geocoderProvider: Market['geocoderProvider'] };
 export type StoreLayer = 'discovered' | 'portfolio_inside' | 'portfolio_outside';
-export type Store = { id: string; layer: StoreLayer; name: string; category: Category | null; lat: number; lng: number; address: string | null; source: string };
+export type Store = {
+  id: string; layer: StoreLayer; name: string; category: Category | null; lat: number; lng: number; address: string | null; source: string;
+  match: { id: string; name: string; distanceM: number } | null;   // the discovered store this portfolio store is, when one was found
+};
+export type LayerFilter = StoreLayer | 'matched';                    // 'matched' is asked for beside the layers: the portfolio stores with a partner
 export type UnlocatedStore = { id: string; name: string; category: Category | null; address: string | null; reason: 'not_found' | 'error' | null };
-export type StoreCounts = { discovered: number; portfolioInside: number; portfolioOutside: number; portfolioUnlocated: number };
+export type StoreCounts = { discovered: number; portfolioInside: number; portfolioOutside: number; portfolioUnlocated: number; matched: number };
 export type MarketStores = { stores: Store[]; unlocated: UnlocatedStore[]; counts: StoreCounts };
-export type StoreFilters = { layers?: StoreLayer[]; categories?: string[]; q?: string };
+export type StoreFilters = { layers?: LayerFilter[]; categories?: string[]; q?: string };
 
 export const useLocations = () => useQuery({ queryKey: ['locations'], queryFn: () => api<{ countries: Country[] }>('/locations'), staleTime: Infinity });
 export const useCategories = () => useQuery({ queryKey: ['categories'], queryFn: () => api<Category[]>('/categories'), staleTime: Infinity });

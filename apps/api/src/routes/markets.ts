@@ -21,6 +21,7 @@ const Market = z.object({
   progress: z.object({ tiles: z.number(), done: z.number(), failed: z.number() }).nullable(),
   geocoding: z.object({ total: z.number(), done: z.number(), failed: z.number() }),
   placement: z.object({ inside: z.number(), outside: z.number(), unlocated: z.number() }),
+  matched: z.number(),
 }).openapi('Market');
 const CreateMarket = z.object({
   name: z.string().trim().min(1).max(120).optional(),
@@ -36,7 +37,7 @@ const idParam = z.object({ id: z.coerce.number().int().positive() });
 // Filters arrive as comma-separated query strings: ?layers=discovered,portfolio_inside&categories=supermarket&q=apollo
 const commaList = (v: string | undefined) => (v ? v.split(',').map((s) => s.trim()).filter(Boolean) : undefined);
 const StoreFiltersQuery = z.object({
-  layers: z.string().optional().transform(commaList).pipe(z.array(z.enum(['discovered', 'portfolio_inside', 'portfolio_outside'])).optional()),
+  layers: z.string().optional().transform(commaList).pipe(z.array(z.enum(['discovered', 'portfolio_inside', 'portfolio_outside', 'matched'])).optional()),
   categories: z.string().optional().transform(commaList).pipe(z.array(z.string().min(1)).optional()),
   q: z.string().trim().max(100).optional(),
 }).openapi('StoreFilters');
@@ -44,11 +45,12 @@ const StoreCategory = Category.nullable();
 const Store = z.object({
   id: z.string(), layer: z.enum(['discovered', 'portfolio_inside', 'portfolio_outside']), name: z.string(), category: StoreCategory,
   lat: z.number(), lng: z.number(), address: z.string().nullable(), source: z.string(),
+  match: z.object({ id: z.string(), name: z.string(), distanceM: z.number() }).nullable(),
 }).openapi('Store');
 const MarketStores = z.object({
   stores: z.array(Store),
   unlocated: z.array(z.object({ id: z.string(), name: z.string(), category: StoreCategory, address: z.string().nullable(), reason: z.string().nullable() })),
-  counts: z.object({ discovered: z.number(), portfolioInside: z.number(), portfolioOutside: z.number(), portfolioUnlocated: z.number() }),
+  counts: z.object({ discovered: z.number(), portfolioInside: z.number(), portfolioOutside: z.number(), portfolioUnlocated: z.number(), matched: z.number() }),
 }).openapi('MarketStores');
 
 registry.registerPath({
@@ -63,7 +65,7 @@ registry.registerPath({
 });
 registry.registerPath({
   method: 'get', path: '/api/markets/{id}/stores', tags: ['markets'], summary: "Everything the market's dashboard draws",
-  description: 'Discovered stores and the portfolio\'s stores with their placement, as one list filtered by `layers`, `categories` (slugs) and `q` (name contains), plus the unlocated portfolio stores and unfiltered totals per layer.',
+  description: 'Discovered stores and the portfolio\'s stores with their placement — and, for a portfolio store, the discovered store it was matched to within MATCH_DISTANCE_M — as one list filtered by `layers` (`matched` selects the portfolio stores with a match, beside the other layers), `categories` (slugs) and `q` (name contains), plus the unlocated portfolio stores and unfiltered totals.',
   request: { params: idParam, query: StoreFiltersQuery },
   responses: { 200: { description: 'OK', content: { 'application/json': { schema: MarketStores } } }, ...errorResponses(400, 404, 500) },
 });

@@ -3,7 +3,8 @@
  * places provider, and what comes back is kept only if it lies inside the boundary and stored under the market. A cell that
  * fails after its retries does not stop the run: the others complete and the market ends 'partial' with the cells named —
  * a market with most of its stores beats a market with none. The cache is what makes the external rate limits survivable:
- * markets in the same city share cells, and a cell answered once serves all of them until it ages out.
+ * markets in the same city share cells, and a cell answered once serves all of them until it ages out. The last thing the
+ * step does, before it reports, is match what it found against the portfolio, so the finished market already carries the pairs.
  */
 import { gridCells, pointInBbox } from '@market-scope/shared';
 import { config } from '../config.ts';
@@ -11,6 +12,7 @@ import { places as defaultPlaces } from '../providers/index.ts';
 import type { PlacesProvider } from '../providers/places.ts';
 import { marketsQueries, type MarketStatus } from '../queries/markets.ts';
 import { discoveryQueries } from '../queries/discovery.ts';
+import { matchPortfolio } from './match-portfolio.ts';
 import { logger } from '../lib/logger.ts';
 
 export interface DiscoveryDeps {
@@ -18,7 +20,7 @@ export interface DiscoveryDeps {
   log: (message: string, meta?: Record<string, unknown>) => void;
   cacheHours?: number;                                                   // default TILE_CACHE_HOURS; 0 asks the source for every cell
 }
-export interface DiscoveryResult { tiles: number; cachedTiles: number; failedTiles: number; stores: number; status: MarketStatus }
+export interface DiscoveryResult { tiles: number; cachedTiles: number; failedTiles: number; stores: number; matched: number; status: MarketStatus }
 
 const defaults: DiscoveryDeps = { places: defaultPlaces, log: (message, meta) => logger.info(meta ?? {}, message) };
 
@@ -57,7 +59,8 @@ export async function discoverStores(marketId: number, deps: DiscoveryDeps = def
   }
 
   const stores = await discoveryQueries.countForMarket(marketId);
+  const matched = await matchPortfolio(marketId, deps.log);              // before the status flips: the finished market carries its pairs
   const status: MarketStatus = failures.length === 0 ? 'ready' : failures.length === cells.length ? 'failed' : 'partial';
   await marketsQueries.setStatus(marketId, status, failures.length ? failures.join('; ') : null);
-  return { tiles: cells.length, cachedTiles, failedTiles: failures.length, stores, status };
+  return { tiles: cells.length, cachedTiles, failedTiles: failures.length, stores, matched, status };
 }

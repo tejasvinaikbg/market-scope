@@ -18,5 +18,25 @@ services:
       retries: 10
       start_period: 30s
 
+  # The route tests' own server: the same image, no volume (its data lives and dies with the container), started on demand
+  # by `npm run db:test:up`, never pointed at by a server. The dev database above cannot see it, and vice versa.
+  db-test:
+    image: postgis/postgis:16-3.4
+    profiles: ["test"]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set in .env}
+      POSTGRES_DB: ${POSTGRES_TEST_DB:?set in .env}
+    ports:
+      - "${POSTGRES_TEST_PORT:?set in .env}:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_TEST_DB}"]
+      interval: 2s
+      timeout: 10s
+      retries: 15
+      start_period: 10s
+
 volumes:
   db_data:

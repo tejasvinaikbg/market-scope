@@ -12,8 +12,9 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useDebounce } from 'use-debounce';
 import { Layers, Info, ArrowRight, ChevronLeft, Loader, Check, TriangleAlert, Search, MapPin, X } from 'lucide-react';
+import { MATCH_DISTANCE_M } from '@market-scope/shared';
 import type { LatLng } from '@market-scope/shared';
-import { useMarket, useMarketStores, type Market, type StoreLayer } from '@/api/hooks';
+import { useMarket, useMarketStores, type Market, type LayerFilter } from '@/api/hooks';
 import { useCurrentMarket } from '@/app/providers';
 import { LAYERS, ALL_LAYERS, LayerSwatch, layerTag, unlocatedReason } from '@/components/layers';
 import { CategoryIcon } from '@/components/categoryIcons';
@@ -26,6 +27,7 @@ const placed = (p: Market['placement']) => {
   const total = p.inside + p.outside + p.unlocated;
   return total === 0 ? '' : ` ${p.inside} of your ${total} stores inside the boundary, ${p.outside} outside${p.unlocated ? `, ${p.unlocated} without a location` : ''}.`;
 };
+const matched = (n: number) => (n === 0 ? '' : ` ${n} of them ${n === 1 ? 'is' : 'are'} a discovered store within ${MATCH_DISTANCE_M} m.`);
 
 /** What to say about discovery, per status. One place, so the words stay consistent. */
 function DiscoveryStatus({ m }: { m: Market }) {
@@ -47,7 +49,7 @@ function DiscoveryStatus({ m }: { m: Market }) {
         </div>
       );
     case 'ready':
-      return <p className="flex items-center gap-2 text-ok"><Check size={16} /> {m.storeCount} stores discovered{p ? ` across ${p.tiles} areas` : ''}.{located(g)}{placed(m.placement)}</p>;
+      return <p className="flex items-center gap-2 text-ok"><Check size={16} /> {m.storeCount} stores discovered{p ? ` across ${p.tiles} areas` : ''}.{located(g)}{placed(m.placement)}{matched(m.matched)}</p>;
     case 'partial':
       return (
         <div className="space-y-1">
@@ -65,13 +67,13 @@ function DiscoveryStatus({ m }: { m: Market }) {
   }
 }
 
-/** The four totals, live from the market itself: they tick up during a run and never follow the filters. */
+/** The five totals, live from the market itself: they tick up during a run and never follow the filters. */
 function Totals({ m }: { m: Market }) {
   const cells: [string, number][] = [
-    ['Discovered', m.storeCount], ['Portfolio inside', m.placement.inside], ['Portfolio outside', m.placement.outside], ['Not located', m.placement.unlocated],
+    ['Discovered', m.storeCount], ['Portfolio inside', m.placement.inside], ['Portfolio outside', m.placement.outside], ['Not located', m.placement.unlocated], ['Matched', m.matched],
   ];
   return (
-    <dl className="grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-4">
+    <dl className="grid grid-cols-2 gap-px border border-line bg-line sm:grid-cols-5">
       {cells.map(([label, n]) => (
         <div key={label} className="bg-surface p-3"><dt className="caption">{label}</dt><dd className="mt-1 text-2xl font-bold">{n}</dd></div>
       ))}
@@ -103,7 +105,7 @@ export default function Page() {
     const m = market.data;
     if (m && current?.id !== m.id) setMarket({ id: m.id, name: m.name, areaSqKm: m.areaSqKm });
   }, [market.data, current, setMarket]);
-  const [layers, setLayers] = useState<StoreLayer[]>(ALL_LAYERS);
+  const [layers, setLayers] = useState<LayerFilter[]>(ALL_LAYERS);
   const [categories, setCategories] = useState<string[]>([]);
   const [search, setSearch] = useState('');
   const [q] = useDebounce(search, 250);                  // one request per pause in typing, not one per key
@@ -196,7 +198,10 @@ export default function Page() {
                             <span className={`block truncate font-medium ${picked(s.id) ? 'text-accent' : ''}`}>{s.name}</span>
                             <span className="block truncate text-sm text-muted">{detail(s.category, s.address)}</span>
                           </span>
-                          <span className="caption flex shrink-0 items-center gap-1.5 pt-1"><LayerSwatch layer={s.layer} /> {layerTag(s.layer)}</span>
+                          <span className="flex shrink-0 flex-col items-end gap-1 pt-1">
+                          <span className="caption flex items-center gap-1.5"><LayerSwatch layer={s.layer} /> {layerTag(s.layer)}</span>
+                          {s.match && <span className="caption flex items-center gap-1.5 text-map-match"><LayerSwatch layer="matched" /> Matched · {s.match.distanceM} m</span>}
+                        </span>
                         </button>
                       </li>
                     ))}

@@ -7,6 +7,8 @@ export const MAX_MARKET_AREA_SQ_KM = 30;
 export const MIN_MARKET_AREA_SQ_KM = 0.01;   // below ~100 m × 100 m it is a mis-drag, not a market
 /** Discovery's grid: cells this many degrees on a side (≈ 2.8 km N–S, ≈ 2.7 km E–W near Bengaluru), aligned to the world, not to the boundary. */
 export const GRID_CELL_DEG = 0.025;
+/** A portfolio store and a discovered store of the same category this close are the same shop (the brief's bonus). */
+export const MATCH_DISTANCE_M = 150;
 
 const EARTH_RADIUS_KM = 6371.0088;
 const KM_PER_DEG_LAT = 111.32;

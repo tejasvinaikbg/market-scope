@@ -47,7 +47,7 @@ after(async () => {
 test('no filter: the four discovered stores and the ten placed portfolio stores, in one list, with totals', async () => {
   const body = await stores();
   assert.equal(body.stores.length, 14);
-  assert.deepEqual(body.counts, { discovered: 4, portfolioInside: 1, portfolioOutside: 9, portfolioUnlocated: 0 });
+  assert.deepEqual(body.counts, { discovered: 4, portfolioInside: 1, portfolioOutside: 9, portfolioUnlocated: 0, matched: 1 });   // the pair is matching's business (its own test); it is counted here
   assert.deepEqual(body.unlocated, []);
   const fresh = body.stores.find((s: { id: string; name: string }) => s.id.startsWith('p:') && s.name === 'FreshMart Koramangala');   // the fixture discovers a store of the same name
   assert.deepEqual([fresh.layer, fresh.source, fresh.category.slug], ['portfolio_inside', 'uploaded', 'supermarket']);
@@ -75,6 +75,6 @@ test('an unlocated portfolio store is listed apart, with the reason', async () =
 });
 
 test('a bad layer is a validation error; an unknown market is 404', async () => {
-  assert.equal((await (await fetch(`${base}/api/markets/${marketId}/stores?layers=matched`)).json()).error.code, 'VALIDATION_ERROR');
+  assert.equal((await (await fetch(`${base}/api/markets/${marketId}/stores?layers=bogus`)).json()).error.code, 'VALIDATION_ERROR');
   assert.equal((await fetch(`${base}/api/markets/999999/stores`)).status, 404);
 });

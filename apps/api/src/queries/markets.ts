@@ -23,6 +23,7 @@ export interface MarketRow {
   progress: MarketProgress | null;                      // null until discovery starts
   geocoding: { total: number; done: number; failed: number };   // the portfolio's stores that needed locating, and how it went
   placement: { inside: number; outside: number; unlocated: number };   // where the portfolio's stores sit for this market
+  matched: number;                                                     // how many of them were paired with a discovered store
   storeCount: number;                                   // discovered so far; grows while discovery runs
   createdAt: Date;
 }
@@ -40,6 +41,7 @@ const SELECT_MARKET = `
          (SELECT COUNT(*) FROM market_portfolio_stores ps WHERE ps.market_id = m.id AND ps.placement = 'inside')::int AS placed_inside,
          (SELECT COUNT(*) FROM market_portfolio_stores ps WHERE ps.market_id = m.id AND ps.placement = 'outside')::int AS placed_outside,
          (SELECT COUNT(*) FROM market_portfolio_stores ps WHERE ps.market_id = m.id AND ps.placement = 'unlocated')::int AS placed_unlocated,
+         (SELECT COUNT(*) FROM market_portfolio_stores ps WHERE ps.market_id = m.id AND ps.matched_store_id IS NOT NULL)::int AS matched,
          COALESCE((SELECT json_agg(json_build_object('id', cat.id, 'slug', cat.slug, 'name', cat.name) ORDER BY cat.id)
                      FROM market_categories mc JOIN categories cat ON cat.id = mc.category_id WHERE mc.market_id = m.id), '[]') AS categories
     FROM markets m
@@ -53,7 +55,7 @@ const toMarket = (r: Record<string, any>): MarketRow => ({
   placesProvider: r.places_provider, geocoderProvider: r.geocoder_provider, categories: r.categories,
   status: r.status, error: r.error, startedAt: r.started_at, completedAt: r.completed_at, progress: r.progress, storeCount: r.store_count,
   geocoding: { total: r.geo_total, done: r.geo_done, failed: r.geo_failed },
-  placement: { inside: r.placed_inside, outside: r.placed_outside, unlocated: r.placed_unlocated }, createdAt: r.created_at,
+  placement: { inside: r.placed_inside, outside: r.placed_outside, unlocated: r.placed_unlocated }, matched: r.matched, createdAt: r.created_at,
 });
 
 export interface NewMarket {

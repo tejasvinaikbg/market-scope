@@ -12,6 +12,8 @@
   "scripts": {
     "db:up": "docker compose up -d db",
     "db:down": "docker compose down",
+    "db:test:up": "docker compose up -d --wait db-test",
+    "db:test:down": "docker compose rm -sf db-test",
     "dev": "concurrently -n api,web -c blue,green \"npm run dev -w apps/api\" \"npm run dev -w apps/web\"",
     "dev:api": "npm run dev -w apps/api",
     "dev:web": "npm run dev -w apps/web",
@@ -20,7 +22,8 @@
     "seed:make": "npm run seed:make --workspace apps/api --",
     "seed:run": "npm run seed:run --workspace apps/api",
     "typecheck": "npm run typecheck --workspaces --if-present",
-    "test": "npm test --workspaces --if-present"
+    "test": "npm test --workspaces --if-present",
+    "test:integration": "npm run db:test:up && npm run test:integration -w apps/api"
   },
   "devDependencies": {
     "concurrently": "^10.0.5"
