@@ -46,22 +46,21 @@ test('unknown route is a JSON 404 envelope', async () => {
 });
 
 test('validation failures are 400 VALIDATION_ERROR with zod issues', async () => {
-  const res = await post('/api/echo', JSON.stringify({ name: '' }));
+  const res = await post('/api/markets', JSON.stringify({}));                  // a real route: the body schema rejects before any database work
   assert.equal(res.status, 400);
   const body = await res.json();
   assert.equal(body.error.code, 'VALIDATION_ERROR');
-  assert.equal(body.error.details[0].path[0], 'name');
+  assert.equal(body.error.details[0].path[0], 'portfolioId');
 });
 
-test('malformed JSON is 400 INVALID_JSON, a thrown Error is 500 INTERNAL_SERVER_ERROR without a stack', async () => {
-  assert.equal((await post('/api/echo', '{bad')).status, 400);
-  const res = await fetch(`${base()}/api/boom`);
-  assert.equal(res.status, 500);
-  assert.deepEqual(await res.json(), { error: { code: 'INTERNAL_SERVER_ERROR', message: 'Internal server error' } });
+test('malformed JSON is 400 INVALID_JSON', async () => {
+  const res = await post('/api/markets', '{bad');
+  assert.equal(res.status, 400);
+  assert.equal((await res.json()).error.code, 'INVALID_JSON');               // the 500 envelope is covered by the error-handler unit test
 });
 
 test('OpenAPI document lists every route and the shared error component', async () => {
   const doc = await (await fetch(`${base()}/api/openapi.json`)).json();
-  assert.deepEqual(Object.keys(doc.paths).sort(), ['/api/categories', '/api/cities/{id}/bbox', '/api/echo', '/api/health', '/api/locations', '/api/markets', '/api/markets/{id}', '/api/portfolios', '/api/portfolios/{id}', '/api/providers']);
-  assert.deepEqual(doc.components.schemas.EchoBody.required, ['name']);
+  assert.deepEqual(Object.keys(doc.paths).sort(), ['/api/categories', '/api/cities/{id}/bbox', '/api/health', '/api/locations', '/api/markets', '/api/markets/{id}', '/api/portfolios', '/api/portfolios/{id}', '/api/providers']);
+  assert.deepEqual(doc.components.schemas.CreateMarket.required, ['portfolioId', 'cityId', 'categoryIds', 'boundary']);
 });

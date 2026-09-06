@@ -76,6 +76,11 @@ export default function Page() {
           <p className="mt-1 text-muted">Boundary and categories decide how much store discovery costs.</p>
         </div>
 
+        {/* The reference data is the first thing this screen asks for; if that fails, nothing below can work, so say it here. */}
+        {(locations.isError || categories.isError || providers.isError) && (
+          <div role="alert" className="border border-bad bg-surface p-3 text-sm font-medium text-bad">Couldn't reach the service. Check your connection and reload the page.</div>
+        )}
+
         <Field icon={<Globe size={14} />} label="Country" value={countryId ?? ''} onChange={(e) => { setCountryId(Number(e.target.value) || null); setStateId(null); setCityId(null); }}>
           <option value="">Select…</option>
           {locations.data?.countries.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}

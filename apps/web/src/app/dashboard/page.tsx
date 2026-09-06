@@ -1,4 +1,4 @@
-/** Step 03 placeholder: the design's empty-state banner, shown until a market exists. */
+/** Step 03 without a market: the design's notice, with the way to the setup screen. A market opens at /dashboard/<id>. */
 import Link from 'next/link';
 import { Info, ArrowRight } from 'lucide-react';
 

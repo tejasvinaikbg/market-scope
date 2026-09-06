@@ -159,3 +159,9 @@ test('the default is the first available source; with none available the CTA sta
   expect(screen.getByRole('alert')).toHaveTextContent('No data source is available');   // nothing can do address lookup
   expect(screen.getByRole('button', { name: /Create market/ })).toBeDisabled();
 });
+
+test('when the reference data cannot be fetched, the screen says so in plain words', async () => {
+  jest.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError('Failed to fetch'));
+  renderApp(<Page />);
+  expect(await screen.findByRole('alert', {}, { timeout: 3000 })).toHaveTextContent("Couldn't reach the service");   // a request with no answer is retried once, a second later
+});

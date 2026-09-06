@@ -13,7 +13,6 @@ import { config, type Config } from './config.ts';
 import { requestLogger } from './middleware/request-logger.ts';
 import { errorHandler, notFoundHandler } from './middleware/error-handler.ts';
 import { healthRouter } from './routes/health.ts';
-import { echoRouter } from './routes/echo.ts';
 import { docsRouter } from './routes/docs.ts';
 import { locationsRouter } from './routes/location.ts';
 import { categoriesRouter } from './routes/categories.ts';
@@ -39,7 +38,7 @@ export function buildApp(overrides: Partial<Pick<Config, 'RATE_LIMIT_PER_MINUTE'
   }
   app.use(requestLogger);
   app.use(express.json({ limit: '1mb' }));
-  app.use('/api', healthRouter(), locationsRouter(), categoriesRouter(), citiesRouter(), portfoliosRouter(), marketsRouter(), providersRouter(), echoRouter(), docsRouter());
+  app.use('/api', healthRouter(), locationsRouter(), categoriesRouter(), citiesRouter(), portfoliosRouter(), marketsRouter(), providersRouter(), docsRouter());
   app.use(notFoundHandler);
   app.use(errorHandler);
   return app;
