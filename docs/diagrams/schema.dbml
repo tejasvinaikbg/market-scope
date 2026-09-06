@@ -1,0 +1,55 @@
+// MarketScope schema — paste into https://dbdiagram.io to render; kept in step with apps/api/src/db/migrations.
+Project market_scope { database_type: 'PostgreSQL' Note: 'Extensions: postgis, pgcrypto. Points are geography(Point,4326); boundaries are geometry(Polygon,4326).' }
+
+Table countries { id int [pk, increment]  code text [not null, unique]  name text [not null] }
+Table states { id int [pk, increment]  country_id int [not null, ref: > countries.id]  name text [not null]  indexes { (country_id, name) [unique] } }
+Table cities {
+  id int [pk, increment]  state_id int [not null, ref: > states.id]  name text [not null]
+  bbox geometry_polygon [note: 'the city box, looked up once']  centre geometry_point  bbox_fetched_at timestamptz
+  indexes { (state_id, name) [unique] }
+}
+Table categories { id int [pk, increment]  slug text [not null, unique]  name text [not null]  osm_selectors jsonb [not null, note: 'OpenStreetMap tag selectors'] }
+
+Table portfolios { id int [pk, increment]  name text [not null]  source_filename text [not null]  row_count int [not null]  created_at timestamptz [not null, default: `now()`] }
+Table portfolio_stores {
+  id int [pk, increment]  portfolio_id int [not null, ref: > portfolios.id, note: 'ON DELETE CASCADE']  row_number int [not null, note: 'spreadsheet row, header = 1']
+  store_name text [not null]  address text [not null]  city text [not null]  state text [not null]  country text [not null]
+  category_raw text [not null]  category_id int [ref: > categories.id, note: 'NULL when nothing seeded matched']
+  location geography_point [note: 'NULL until uploaded with coordinates or geocoded']  location_source text [note: 'uploaded | geocoded']
+  geocode_status text [note: 'ok | not_found | error; NULL if never attempted']  geocoded_at timestamptz
+  indexes { (portfolio_id, row_number) [unique]  location [type: gist] }
+}
+
+Table markets {
+  id int [pk, increment]  name text [not null]  portfolio_id int [not null, ref: > portfolios.id]  city_id int [not null, ref: > cities.id]
+  boundary geometry_polygon [not null, note: 'the rectangle the user left; GIST index']  area_sq_km numeric(10,4) [not null, note: 'ST_Area(boundary::geography) / 1e6']
+  places_provider text [not null, note: 'overpass | google']  geocoder_provider text [not null, note: 'nominatim | google']
+  status text [not null, default: 'pending', note: 'pending | running | ready | partial | failed']  error text  progress jsonb [note: '{tiles, done, failed}']
+  started_at timestamptz  completed_at timestamptz  created_at timestamptz [not null, default: `now()`]
+}
+Table market_categories { market_id int [not null, ref: > markets.id, note: 'ON DELETE CASCADE']  category_id int [not null, ref: > categories.id]  indexes { (market_id, category_id) [pk] } }
+
+Table discovered_stores {
+  id int [pk, increment]  market_id int [not null, ref: > markets.id, note: 'ON DELETE CASCADE']  provider text [not null]  provider_place_id text [not null, note: 'the source\'s own id']
+  name text [not null]  category_id int [not null, ref: > categories.id]  location geography_point [not null]  address text  tags jsonb [not null, default: '{}']
+  created_at timestamptz [not null]  updated_at timestamptz [not null]
+  indexes { (market_id, provider, provider_place_id) [unique, note: 'a re-run updates in place']  market_id  location [type: gist] }
+}
+Table market_portfolio_stores {
+  market_id int [not null, ref: > markets.id, note: 'ON DELETE CASCADE']  portfolio_store_id int [not null, ref: > portfolio_stores.id, note: 'ON DELETE CASCADE']
+  placement text [not null, note: 'inside | outside | unlocated']  placed_at timestamptz [not null]
+  matched_store_id int [ref: > discovered_stores.id, note: 'ON DELETE SET NULL']  match_distance_m real  matched_at timestamptz
+  indexes { (market_id, portfolio_store_id) [pk] }
+}
+
+Table place_tiles {
+  id int [pk, increment]  provider text [not null]  cell_key text [not null, note: 'grid cell, e.g. 517:3104']  categories_key text [not null, note: 'slugs sorted and joined']
+  places jsonb [not null, note: 'the answer for the whole cell']  fetched_at timestamptz [not null, default: `now()`]
+  indexes { (provider, cell_key, categories_key) [unique] }
+}
+Table jobs {
+  id int [pk, increment]  type text [not null, note: 'market.pipeline']  market_id int [ref: > markets.id, note: 'ON DELETE CASCADE']  payload jsonb [not null, default: '{}']
+  status text [not null, default: 'pending', note: 'pending | running | done | failed']  attempts int [not null, default: 0]  run_after timestamptz [not null, default: `now()`]
+  last_error text  created_at timestamptz [not null]  updated_at timestamptz [not null]
+  indexes { (status, run_after) }
+}

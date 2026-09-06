@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1190" height="760" viewBox="0 0 1190 760" font-family="Helvetica, Arial, sans-serif" font-size="12">
+<defs><marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#444"/></marker></defs>
+<rect width="1190" height="760" fill="#ffffff"/>
+<rect x="30" y="30" width="180" height="74" fill="#ffffff" stroke="#d6b656"/><rect x="30" y="30" width="180" height="22" fill="#fff2cc" stroke="#d6b656"/>
+<text x="120.0" y="45" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">countries</text>
+<text x="36" y="64" font-size="11" font-weight="bold" fill="#333">id PK</text>
+<text x="36" y="80" font-size="11" fill="#333">code UNIQUE</text>
+<text x="36" y="96" font-size="11" fill="#333">name</text>
+<rect x="30" y="130" width="180" height="74" fill="#ffffff" stroke="#d6b656"/><rect x="30" y="130" width="180" height="22" fill="#fff2cc" stroke="#d6b656"/>
+<text x="120.0" y="145" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">states</text>
+<text x="36" y="164" font-size="11" font-weight="bold" fill="#333">id PK</text>
+<text x="36" y="180" font-size="11" fill="#333">country_id FK</text>
+<text x="36" y="196" font-size="11" fill="#333">name</text>
+<rect x="30" y="230" width="180" height="122" fill="#ffffff" stroke="#d6b656"/><rect x="30" y="230" width="180" height="22" fill="#fff2cc" stroke="#d6b656"/>
+<text x="120.0" y="245" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">cities</text>
+<text x="36" y="264" font-size="11" font-weight="bold" fill="#333">id PK</text>
+<text x="36" y="280" font-size="11" fill="#333">state_id FK</text>
+<text x="36" y="296" font-size="11" fill="#333">name</text>
+<text x="36" y="312" font-size="11" fill="#333">bbox geometry</text>
+<text x="36" y="328" font-size="11" fill="#333">centre geometry</text>
+<text x="36" y="344" font-size="11" fill="#333">bbox_fetched_at</text>
+<rect x="30" y="380" width="180" height="106" fill="#ffffff" stroke="#d6b656"/><rect x="30" y="380" width="180" height="22" fill="#fff2cc" stroke="#d6b656"/>
+<text x="120.0" y="395" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">portfolios</text>
+<text x="36" y="414" font-size="11" font-weight="bold" fill="#333">id PK</text>
+<text x="36" y="430" font-size="11" fill="#333">name</text>
+<text x="36" y="446" font-size="11" fill="#333">source_filename</text>
+<text x="36" y="462" font-size="11" fill="#333">row_count</text>
+<text x="36" y="478" font-size="11" fill="#333">created_at</text>
+<rect x="260" y="30" width="220" height="250" fill="#ffffff" stroke="#d6b656"/><rect x="260" y="30" width="220" height="22" fill="#fff2cc" stroke="#d6b656"/>
+<text x="370.0" y="45" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">markets</text>
+<text x="266" y="64" font-size="11" font-weight="bold" fill="#333">id PK</text>
+<text x="266" y="80" font-size="11" fill="#333">name</text>
+<text x="266" y="96" font-size="11" fill="#333">portfolio_id FK</text>
+<text x="266" y="112" font-size="11" fill="#333">city_id FK</text>
+<text x="266" y="128" font-size="11" fill="#333">boundary geometry</text>
+<text x="266" y="144" font-size="11" fill="#333">area_sq_km</text>
+<text x="266" y="160" font-size="11" fill="#333">places_provider</text>
+<text x="266" y="176" font-size="11" fill="#333">geocoder_provider</text>
+<text x="266" y="192" font-size="11" fill="#333">status</text>
+<text x="266" y="208" font-size="11" fill="#333">error</text>
+<text x="266" y="224" font-size="11" fill="#333">progress jsonb</text>
+<text x="266" y="240" font-size="11" fill="#333">started_at</text>
+<text x="266" y="256" font-size="11" fill="#333">completed_at</text>
+<text x="266" y="272" font-size="11" fill="#333">created_at</text>
+<rect x="510" y="380" width="220" height="250" fill="#ffffff" stroke="#d6b656"/><rect x="510" y="380" width="220" height="22" fill="#fff2cc" stroke="#d6b656"/>
+<text x="620.0" y="395" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">portfolio_stores</text>
+<text x="516" y="414" font-size="11" font-weight="bold" fill="#333">id PK</text>
+<text x="516" y="430" font-size="11" fill="#333">portfolio_id FK</text>
+<text x="516" y="446" font-size="11" fill="#333">row_number</text>
+<text x="516" y="462" font-size="11" fill="#333">store_name</text>
+<text x="516" y="478" font-size="11" fill="#333">address</text>
+<text x="516" y="494" font-size="11" fill="#333">city</text>
+<text x="516" y="510" font-size="11" fill="#333">state</text>
+<text x="516" y="526" font-size="11" fill="#333">country</text>
+<text x="516" y="542" font-size="11" fill="#333">category_raw</text>
+<text x="516" y="558" font-size="11" fill="#333">category_id FK (nullable)</text>
+<text x="516" y="574" font-size="11" fill="#333">location geography</text>
+<text x="516" y="590" font-size="11" fill="#333">location_source</text>
+<text x="516" y="606" font-size="11" fill="#333">geocode_status</text>
+<text x="516" y="622" font-size="11" fill="#333">geocoded_at</text>
+<rect x="740" y="380" width="200" height="138" fill="#ffffff" stroke="#d6b656"/><rect x="740" y="380" width="200" height="22" fill="#fff2cc" stroke="#d6b656"/>
+<text x="840.0" y="395" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">market_portfolio_stores</text>
+<text x="746" y="414" font-size="11" font-weight="bold" fill="#333">market_id PK FK</text>
+<text x="746" y="430" font-size="11" font-weight="bold" fill="#333">portfolio_store_id PK FK</text>
+<text x="746" y="446" font-size="11" fill="#333">placement</text>
+<text x="746" y="462" font-size="11" fill="#333">placed_at</text>
+<text x="746" y="478" font-size="11" fill="#333">matched_store_id FK (set null)</text>
+<text x="746" y="494" font-size="11" fill="#333">match_distance_m</text>
+<text x="746" y="510" font-size="11" fill="#333">matched_at</text>
+<rect x="740" y="30" width="200" height="202" fill="#ffffff" stroke="#d6b656"/><rect x="740" y="30" width="200" height="22" fill="#fff2cc" stroke="#d6b656"/>
+<text x="840.0" y="45" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">discovered_stores</text>
+<text x="746" y="64" font-size="11" font-weight="bold" fill="#333">id PK</text>
+<text x="746" y="80" font-size="11" fill="#333">market_id FK</text>
+<text x="746" y="96" font-size="11" fill="#333">provider</text>
+<text x="746" y="112" font-size="11" fill="#333">provider_place_id</text>
+<text x="746" y="128" font-size="11" fill="#333">name</text>
+<text x="746" y="144" font-size="11" fill="#333">category_id FK</text>
+<text x="746" y="160" font-size="11" fill="#333">location geography</text>
+<text x="746" y="176" font-size="11" fill="#333">address</text>
+<text x="746" y="192" font-size="11" fill="#333">tags jsonb</text>
+<text x="746" y="208" font-size="11" fill="#333">created_at</text>
+<text x="746" y="224" font-size="11" fill="#333">updated_at</text>
+<rect x="990" y="30" width="180" height="186" fill="#ffffff" stroke="#d6b656"/><rect x="990" y="30" width="180" height="22" fill="#fff2cc" stroke="#d6b656"/>
+<text x="1080.0" y="45" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">jobs</text>
+<text x="996" y="64" font-size="11" font-weight="bold" fill="#333">id PK</text>
+<text x="996" y="80" font-size="11" fill="#333">type</text>
+<text x="996" y="96" font-size="11" fill="#333">market_id FK</text>
+<text x="996" y="112" font-size="11" fill="#333">payload jsonb</text>
+<text x="996" y="128" font-size="11" fill="#333">status</text>
+<text x="996" y="144" font-size="11" fill="#333">attempts</text>
+<text x="996" y="160" font-size="11" fill="#333">run_after</text>
+<text x="996" y="176" font-size="11" fill="#333">last_error</text>
+<text x="996" y="192" font-size="11" fill="#333">created_at</text>
+<text x="996" y="208" font-size="11" fill="#333">updated_at</text>
+<rect x="990" y="250" width="180" height="122" fill="#ffffff" stroke="#d6b656"/><rect x="990" y="250" width="180" height="22" fill="#fff2cc" stroke="#d6b656"/>
+<text x="1080.0" y="265" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">place_tiles</text>
+<text x="996" y="284" font-size="11" font-weight="bold" fill="#333">id PK</text>
+<text x="996" y="300" font-size="11" fill="#333">provider</text>
+<text x="996" y="316" font-size="11" fill="#333">cell_key</text>
+<text x="996" y="332" font-size="11" fill="#333">categories_key</text>
+<text x="996" y="348" font-size="11" fill="#333">places jsonb</text>
+<text x="996" y="364" font-size="11" fill="#333">fetched_at</text>
+<rect x="510" y="660" width="220" height="90" fill="#ffffff" stroke="#d6b656"/><rect x="510" y="660" width="220" height="22" fill="#fff2cc" stroke="#d6b656"/>
+<text x="620.0" y="675" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">categories</text>
+<text x="516" y="694" font-size="11" font-weight="bold" fill="#333">id PK</text>
+<text x="516" y="710" font-size="11" fill="#333">slug UNIQUE</text>
+<text x="516" y="726" font-size="11" fill="#333">name</text>
+<text x="516" y="742" font-size="11" fill="#333">osm_selectors jsonb</text>
+<rect x="760" y="660" width="200" height="58" fill="#ffffff" stroke="#d6b656"/><rect x="760" y="660" width="200" height="22" fill="#fff2cc" stroke="#d6b656"/>
+<text x="860.0" y="675" text-anchor="middle" font-size="12" font-weight="bold" fill="#222">market_categories</text>
+<text x="766" y="694" font-size="11" font-weight="bold" fill="#333">market_id PK FK</text>
+<text x="766" y="710" font-size="11" font-weight="bold" fill="#333">category_id PK FK</text>
+<path d="M120.0,130 V117.0 H120.0 V104" fill="none" stroke="#444" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M120.0,230 V217.0 H120.0 V204" fill="none" stroke="#444" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M260,150 L240,150 L240,285 L210,285" fill="none" stroke="#444" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="240" y="210" text-anchor="middle" font-size="11" fill="#444" stroke="#fff" stroke-width="4" paint-order="stroke">city_id</text>
+<path d="M280,280 L280,300 L280,410 L210,410" fill="none" stroke="#444" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="280" y="355" text-anchor="middle" font-size="11" fill="#444" stroke="#fff" stroke-width="4" paint-order="stroke">portfolio_id</text>
+<path d="M510,450 L490,450 L220,450 L210,450" fill="none" stroke="#444" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="390" y="445" text-anchor="middle" font-size="11" fill="#444" stroke="#fff" stroke-width="4" paint-order="stroke">portfolio_id</text>
+<path d="M740,469.0 H735.0 V525.0 H730" fill="none" stroke="#444" stroke-width="1.4" marker-end="url(#arrow)"/>
+<path d="M480,95.0 H610.0 V71.0 H740" fill="none" stroke="#444" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="610.0" y="65.0" text-anchor="middle" font-size="11" fill="#444" stroke="#fff" stroke-width="4" paint-order="stroke">market_id</text>
+<path d="M840,380 L840,330 L420,330 L420,280" fill="none" stroke="#444" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="630" y="325" text-anchor="middle" font-size="11" fill="#444" stroke="#fff" stroke-width="4" paint-order="stroke">market_id</text>
+<path d="M900,380 L900,300 L900,232" fill="none" stroke="#444" stroke-width="1.4" marker-end="url(#arrow)" stroke-dasharray="6 4"/>
+<text x="900" y="295" text-anchor="middle" font-size="11" fill="#444" stroke="#fff" stroke-width="4" paint-order="stroke">matched_store_id</text>
+<path d="M1080,30 L1080,15 L370,15 L370,30" fill="none" stroke="#444" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="725" y="10" text-anchor="middle" font-size="11" fill="#444" stroke="#fff" stroke-width="4" paint-order="stroke">market_id</text>
+<path d="M620,630 L620,640 L620,660" fill="none" stroke="#444" stroke-width="1.4" marker-end="url(#arrow)" stroke-dasharray="6 4"/>
+<text x="620" y="635" text-anchor="middle" font-size="11" fill="#444" stroke="#fff" stroke-width="4" paint-order="stroke">category_id</text>
+<path d="M940,100 L960,100 L960,700 L730,700" fill="none" stroke="#444" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="960" y="395" text-anchor="middle" font-size="11" fill="#444" stroke="#fff" stroke-width="4" paint-order="stroke">category_id</text>
+<path d="M760,668 L770,640 L735,640 L735,362 L400,362 L400,280" fill="none" stroke="#444" stroke-width="1.4" marker-end="url(#arrow)"/>
+<text x="600" y="373" text-anchor="middle" font-size="11" fill="#444" stroke="#fff" stroke-width="4" paint-order="stroke">market_id</text>
+<path d="M760,689.0 H745.0 V705.0 H730" fill="none" stroke="#444" stroke-width="1.4" marker-end="url(#arrow)"/>
+</svg>

@@ -1,0 +1,15 @@
+node_modules
+**/node_modules
+.next
+**/.next
+dist
+coverage
+.git
+.env
+*.log
+docs
+*.md
+!README.md
+apps/web/test
+apps/api/test
+packages/shared/test

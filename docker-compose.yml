@@ -38,5 +38,43 @@ services:
       retries: 15
       start_period: 10s
 
+  # The whole stack from the images (`docker compose --profile app up -d --build`): the deployed shape on one machine.
+  # Migrations first: `docker compose --profile app run --rm api node src/db/migrate.ts`.
+  api:
+    image: market-scope-api
+    build: { context: ., dockerfile: apps/api/Dockerfile }
+    profiles: ["app"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      JOBS: "off"                                    # the worker below runs the queue
+      PORT: "4200"
+    ports:
+      - "${API_PORT:-4200}:4200"
+    depends_on:
+      db: { condition: service_healthy }
+  worker:
+    image: market-scope-api                          # the same image as the api; only the command differs
+    profiles: ["app"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    command: ["node", "src/worker.ts"]
+    depends_on:
+      db: { condition: service_healthy }
+  web:
+    image: market-scope-web
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-}   # blank: the browser calls /api on this server, which forwards to the api service
+        API_URL: http://api:4200                       # the forward's target, compiled in at build time
+    profiles: ["app"]
+    ports:
+      - "${WEB_PORT:-3200}:3200"
+    depends_on:
+      - api
+
 volumes:
   db_data:
