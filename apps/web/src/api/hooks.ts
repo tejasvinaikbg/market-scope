@@ -17,6 +17,9 @@ export type Market = {
   id: number; name: string; portfolioId: number; portfolioName: string; cityId: number; cityName: string;
   boundary: Bbox; areaSqKm: number; placesProvider: 'overpass' | 'google'; geocoderProvider: 'nominatim' | 'google';
   categories: Category[]; createdAt: string;
+  status: 'pending' | 'running' | 'ready' | 'partial' | 'failed'; error: string | null;
+  startedAt: string | null; completedAt: string | null; storeCount: number;
+  progress: { tiles: number; done: number; failed: number } | null;
 };
 export type ProviderOption = { id: 'overpass' | 'nominatim' | 'google'; name: string; enabled: boolean; reason: 'not configured' | 'disabled' | null };
 export type Providers = { places: ProviderOption[]; geocoding: ProviderOption[] };
@@ -46,9 +49,17 @@ export function useUploadPortfolio() {
   });
 }
 
-/** One market by id, as the API stored it — the server's area, not the screen's. */
+/**
+ * One market by id, as the API stored it. While discovery is queued or running the query polls every 2 s, then stops by
+ * itself. It keeps polling in a background tab too: a run lasts seconds, and someone who switched tabs to wait should come
+ * back to the finished state, not to a stale "running".
+ */
 export const useMarket = (id: number | null) =>
-  useQuery({ queryKey: ['market', id], queryFn: () => api<Market>(`/markets/${id}`), enabled: id != null });
+  useQuery({
+    queryKey: ['market', id], queryFn: () => api<Market>(`/markets/${id}`), enabled: id != null,
+    refetchInterval: (query) => (query.state.data && ['pending', 'running'].includes(query.state.data.status) ? 2000 : false),
+    refetchIntervalInBackground: true,
+  });
 
 /** Creates the market from the setup screen's decisions. On success it becomes the session's current market. */
 export function useCreateMarket() {

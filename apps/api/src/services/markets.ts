@@ -10,6 +10,7 @@ import { portfoliosQueries } from '../queries/portfolios.ts';
 import { citiesQueries } from '../queries/cities.ts';
 import { categoriesQueries } from '../queries/categories.ts';
 import { providerUnavailable } from '../providers/availability.ts';
+import { jobsQueries } from '../queries/jobs.ts';
 
 export interface CreateMarketInput {
   name?: string; portfolioId: number; cityId: number; categoryIds: number[]; boundary: Bbox;
@@ -40,12 +41,17 @@ export async function createMarket(input: CreateMarketInput) {
   const unknown = categoryIds.filter((id) => !known.has(id));
   if (unknown.length) throw badRequest('UNKNOWN_CATEGORY', `Unknown category id(s): ${unknown.join(', ')}`, { unknown });
 
-  // 5. Store. The name is optional on the screen (the design has no field for it), so it defaults to something readable.
+  // The name is optional on the screen (the design has no field for it), so it defaults to something readable.
   const name = input.name?.trim() || `${city.name} · ${portfolio.name}`;
-  const id = await withTransaction((trx) => marketsQueries.insert({
-    name, portfolioId: input.portfolioId, cityId: input.cityId, boundary: input.boundary, areaSqKm,
-    placesProvider: input.placesProvider, geocoderProvider: input.geocoderProvider, categoryIds,
-  }, trx));
+  // 5. Store, and queue the work. Same transaction: a market without its job, or a job without its market, cannot exist.
+  const id = await withTransaction(async (trx) => {
+    const marketId = await marketsQueries.insert({
+      name, portfolioId: input.portfolioId, cityId: input.cityId, boundary: input.boundary, areaSqKm,
+      placesProvider: input.placesProvider, geocoderProvider: input.geocoderProvider, categoryIds,
+    }, trx);
+    await jobsQueries.enqueue('market.pipeline', marketId, { marketId }, trx);
+    return marketId;
+  });
   return (await marketsQueries.byId(id))!;
 }
 

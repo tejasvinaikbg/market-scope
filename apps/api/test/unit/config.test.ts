@@ -23,6 +23,13 @@ test('data sources: every switch defaults on, a blank Google key is no key, and 
   assert.equal(Env.safeParse({ ...good, GOOGLE_PLACES_ENABLED: 'maybe' }).success, false);
 });
 
+test('store discovery: overpass by default, and the mirror list splits on commas', () => {
+  const env = Env.parse(good);
+  assert.equal(env.PLACES, 'overpass');
+  assert.equal(env.OVERPASS_URLS.length, 2);
+  assert.deepEqual(Env.parse({ ...good, OVERPASS_URLS: ' https://a/ , https://b/ ' }).OVERPASS_URLS, ['https://a/', 'https://b/']);
+});
+
 test('requires DATABASE_URL and NOMINATIM_USER_AGENT', () => {
   const missing = Env.safeParse({});
   assert.equal(missing.success, false);

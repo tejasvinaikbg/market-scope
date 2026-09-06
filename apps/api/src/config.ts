@@ -15,6 +15,10 @@ export const Env = z.object({
   DATABASE_URL: z.url(),
   GEOCODER: z.enum(['nominatim', 'fixture']).default('nominatim'),
   NOMINATIM_USER_AGENT: z.string().min(1),
+  // Store discovery: overpass (live, free) or fixture (offline, from apps/api/fixtures/overpass.json). Mirrors rotate on retry.
+  PLACES: z.enum(['overpass', 'fixture']).default('overpass'),
+  JOBS: z.enum(['on', 'off']).default('on'),                              // off: the API answers but never runs discovery (tests, debugging)
+  OVERPASS_URLS: z.string().default('https://overpass-api.de/api/interpreter,https://overpass.kumi.systems/api/interpreter').transform((v) => v.split(',').map((u) => u.trim()).filter(Boolean)),
   // Data sources: every provider has a switch; the Google ones also need a key. Off means greyed out on the screen and refused by the API.
   OVERPASS_ENABLED: z.enum(['true', 'false']).default('true'),
   NOMINATIM_ENABLED: z.enum(['true', 'false']).default('true'),
@@ -34,6 +38,9 @@ export const config = {
   APP_DESCRIPTION: pkg.description ?? "",
   GEOCODER: env.GEOCODER,
   NOMINATIM_USER_AGENT: env.NOMINATIM_USER_AGENT,
+  PLACES: env.PLACES,
+  JOBS: env.JOBS,
+  OVERPASS_URLS: env.OVERPASS_URLS,
   OVERPASS_ENABLED: env.OVERPASS_ENABLED === 'true',
   NOMINATIM_ENABLED: env.NOMINATIM_ENABLED === 'true',
   GOOGLE_PLACES_API_KEY: env.GOOGLE_PLACES_API_KEY,

@@ -49,6 +49,7 @@ test('a legal boundary creates the market, measured by PostGIS, with the categor
   assert.deepEqual(body.boundary, koramangala);
   assert.equal(body.name, 'Bengaluru · test-markets');
   assert.deepEqual([body.placesProvider, body.geocoderProvider], ['overpass', 'nominatim']);
+  assert.deepEqual([body.status, body.storeCount, body.error], ['pending', 0, null]);   // discovery is queued, not run yet
 
   const one = await (await fetch(`${base}/api/markets/${body.id}`)).json();
   assert.equal(one.cityName, 'Bengaluru');

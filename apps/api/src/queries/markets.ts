@@ -4,9 +4,13 @@
  */
 import type { Bbox } from '@market-scope/shared';
 import { db, type Db } from '../db/knex.ts';
+import type { CategorySearch } from '../providers/places.ts';
 
 export type PlacesProvider = 'overpass' | 'google';
 export type GeocoderProvider = 'nominatim' | 'google';
+export type MarketStatus = 'pending' | 'running' | 'ready' | 'partial' | 'failed';
+/** How far discovery has got: areas (tiles) to search, searched, and searched without success. */
+export interface MarketProgress { tiles: number; done: number; failed: number }
 
 export interface MarketRow {
   id: number; name: string;
@@ -15,6 +19,9 @@ export interface MarketRow {
   boundary: Bbox; areaSqKm: number;
   placesProvider: PlacesProvider; geocoderProvider: GeocoderProvider;
   categories: Array<{ id: number; slug: string; name: string }>;
+  status: MarketStatus; error: string | null; startedAt: Date | null; completedAt: Date | null;
+  progress: MarketProgress | null;                      // null until discovery starts
+  storeCount: number;                                   // discovered so far; grows while discovery runs
   createdAt: Date;
 }
 
@@ -23,6 +30,8 @@ const SELECT_MARKET = `
   SELECT m.id, m.name, m.portfolio_id, p.name AS portfolio_name, m.city_id, c.name AS city_name,
          ST_YMin(m.boundary) AS south, ST_XMin(m.boundary) AS west, ST_YMax(m.boundary) AS north, ST_XMax(m.boundary) AS east,
          m.area_sq_km, m.places_provider, m.geocoder_provider, m.created_at,
+         m.status, m.error, m.started_at, m.completed_at, m.progress,
+         (SELECT COUNT(*) FROM discovered_stores d WHERE d.market_id = m.id)::int AS store_count,
          COALESCE((SELECT json_agg(json_build_object('id', cat.id, 'slug', cat.slug, 'name', cat.name) ORDER BY cat.id)
                      FROM market_categories mc JOIN categories cat ON cat.id = mc.category_id WHERE mc.market_id = m.id), '[]') AS categories
     FROM markets m
@@ -33,7 +42,8 @@ const SELECT_MARKET = `
 const toMarket = (r: Record<string, any>): MarketRow => ({
   id: r.id, name: r.name, portfolioId: r.portfolio_id, portfolioName: r.portfolio_name, cityId: r.city_id, cityName: r.city_name,
   boundary: { south: r.south, west: r.west, north: r.north, east: r.east }, areaSqKm: Number(r.area_sq_km),
-  placesProvider: r.places_provider, geocoderProvider: r.geocoder_provider, categories: r.categories, createdAt: r.created_at,
+  placesProvider: r.places_provider, geocoderProvider: r.geocoder_provider, categories: r.categories,
+  status: r.status, error: r.error, startedAt: r.started_at, completedAt: r.completed_at, progress: r.progress, storeCount: r.store_count, createdAt: r.created_at,
 });
 
 export interface NewMarket {
@@ -68,5 +78,25 @@ export const marketsQueries = {
   async list(k: Db = db): Promise<MarketRow[]> {
     const { rows } = await k.raw(`${SELECT_MARKET} ORDER BY m.created_at DESC`);
     return rows.map(toMarket);
+  },
+
+  /** The market's categories with their OSM search terms — what the places provider is asked for. */
+  async categorySearches(marketId: number, k: Db = db): Promise<CategorySearch[]> {
+    const rows = await k('market_categories as mc').join('categories as c', 'c.id', 'mc.category_id')
+      .where('mc.market_id', marketId).orderBy('c.id').select('c.id', 'c.slug', 'c.osm_selectors');
+    return rows.map((r) => ({ categoryId: r.id, slug: r.slug, selectors: r.osm_selectors }));
+  },
+
+  async setProgress(id: number, progress: MarketProgress, k: Db = db): Promise<void> {
+    await k('markets').where({ id }).update({ progress: JSON.stringify(progress) });
+  },
+
+  /** Status transitions stamp their own timestamps: running sets started_at, any terminal state sets completed_at. */
+  async setStatus(id: number, status: MarketStatus, error: string | null = null, k: Db = db): Promise<void> {
+    await k('markets').where({ id }).update({
+      status, error,
+      started_at: k.raw(`CASE WHEN ? = 'running' THEN now() ELSE started_at END`, [status]),
+      completed_at: k.raw(`CASE WHEN ? IN ('ready', 'partial', 'failed') THEN now() ELSE completed_at END`, [status]),
+    });
   },
 };

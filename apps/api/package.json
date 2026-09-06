@@ -4,9 +4,10 @@
   "description": "",
   "scripts": {
     "dev": "tsx watch src/server.ts",
+    "worker": "tsx watch src/worker.ts",
     "typecheck": "tsc -p tsconfig.json",
     "test": "LOG_LEVEL=silent tsx --test \"test/unit/**/*.test.ts\"",
-    "test:integration": "LOG_LEVEL=silent GEOCODER=fixture tsx --test \"test/routes/**/*.test.ts\"",
+    "test:integration": "LOG_LEVEL=silent GEOCODER=fixture PLACES=fixture JOBS=off tsx --test \"test/routes/**/*.test.ts\"",
     "knex": "NODE_OPTIONS=--import=tsx knex --knexfile src/db/knexfile.ts",
     "migrate": "npm run knex -- migrate:latest",
     "migrate:up": "npm run knex -- migrate:up",
