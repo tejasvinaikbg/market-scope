@@ -23,9 +23,12 @@
     "seed:run": "npm run seed:run --workspace apps/api",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm test --workspaces --if-present",
-    "test:integration": "npm run db:test:up && npm run test:integration -w apps/api"
+    "test:integration": "npm run db:test:up && npm run test:integration -w apps/api",
+    "test:e2e": "npm run db:test:up && playwright test"
   },
   "devDependencies": {
-    "concurrently": "^10.0.5"
+    "@playwright/test": "^1.63.0",
+    "concurrently": "^10.0.5",
+    "dotenv": "^17.4.2"
   }
 }

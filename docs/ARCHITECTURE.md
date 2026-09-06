@@ -49,14 +49,15 @@ same operation: queue the job once more.
 
 ## Data model
 
-![Data model](diagrams/data-model.svg)
+![Data model](diagrams/er.svg)
 
-**Reading the diagram.** `markets` is the centre: it points at the portfolio it was made from and the city it is in
-(solid and dashed arrows on the top row), and everything below it belongs to it and goes with it when it is deleted
-(the `cascade` arrows). `market_portfolio_stores` is the join of a market and a portfolio store, carrying the placement
-and, when found, the discovered store it was matched to (`set null` when that store goes). `discovered_stores` and
-`portfolio_stores` both point at `categories`. `jobs` and `place_tiles` stand apart on the right: the queue that runs
-markets, and the cache that outlives them.
+**Reading the diagram.** `markets`, top centre, is what everything else belongs to: it points at the portfolio it was
+made from and the city it is in; `discovered_stores` to its right, `market_portfolio_stores` below, `market_categories`
+and the `jobs` row queued for it all point back at it and go with it when it is deleted. `market_portfolio_stores` joins
+a market to a `portfolio_stores` row and carries the placement and, when found, the discovered store it was matched to,
+cleared rather than broken when that store goes. The location tree runs down the left. `place_tiles`, bottom right,
+belongs to no market: it is the discovery cache and outlives the markets that filled it. Every column is listed in
+[DATABASE.md](DATABASE.md), which also carries the schema as DBML for dbdiagram.io.
 
 | Table | Holds | Notes |
 |---|---|---|

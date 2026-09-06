@@ -8,3 +8,6 @@ dist/
 .editorconfig
 *.tsbuildinfo
 coverage/
+.next-e2e/
+test-results/
+playwright-report/

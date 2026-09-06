@@ -73,6 +73,7 @@ All from the repository root.
 | `npm run typecheck` | TypeScript across every workspace |
 | `npm test` | unit and component tests: shared package, API, web |
 | `npm run test:integration` | API route tests against their own Postgres container |
+| `npm run test:e2e` | the end-to-end run: the real screens over the API, fixture providers, its own database |
 | `npm run db:test:down` | remove that test container |
 | `npm run worker -w apps/api` | the job worker as its own process (with `JOBS=off` on the API) |
 | `docker compose --profile app up -d --build` | the whole stack from the container images: API, worker, web, Postgres |
@@ -130,11 +131,11 @@ suites against a PostGIS service container in a database of their own, then both
 ## Status
 
 Built and verified: upload, market setup, discovery with an in-database job queue and a tile cache, geocoding and
-placement, the dashboard with four layers, matching, run again, edit and delete. Test counts at the time of writing:
-14 shared, 49 API unit, 45 API route, 51 web.
+placement, the dashboard with four layers, matching, run again, edit and delete; container images, a compose profile
+for the stack, CI. Test counts at the time of writing: 14 shared, 49 API unit, 45 API route, 51 web, 3 end-to-end.
 
-Not built yet: the Google Places and Geocoding providers (offered in the setup screen as "not configured"),
-end-to-end browser tests, and lint tooling. See the [roadmap](docs/ROADMAP.md).
+Not built yet: the Google Places and Geocoding providers (offered in the setup screen as "not configured") and lint
+tooling. See the [roadmap](docs/ROADMAP.md).
 
 ## Data sources and attribution
 

@@ -31,8 +31,18 @@ Koramangala, one of them 122 m from the sample's FreshMart so a matched pair exi
 
 14 shared, 49 API unit, 45 API route, 51 web. Each lesson-sized change states the counts it expects.
 
+## End to end
+
+`npm run test:e2e` starts the API and the web app for the run, against the fixture providers and a database of the
+tests' own (`<test database>_e2e` on the route tests' container, prepared as the API starts), on ports 4210 and 3210
+beside the development ones. The web app builds into `.next-e2e`, so a running dev server is untouched. One flow does
+what a person does: upload, define a market, watch the run finish, read the dashboard, pick a store, run again, find it
+in the list, delete it; a second checks a bad file is refused; a phone project checks the screens fit. About a minute.
+
 ## In CI
 
-`.github/workflows/ci.yml` runs the same commands on every push: typecheck, `npm test`, then the route suites against a
-`postgis/postgis:16-3.4` service container. There the runner is pointed at that container by `TEST_DATABASE_URL` and
-creates the database itself, so nothing is set up by hand. A second job builds both container images without pushing.
+`.github/workflows/ci.yml` runs the same commands on every push: typecheck, `npm test`, the route suites against a
+`postgis/postgis:16-3.4` service container, then the end-to-end run, then a second job builds both container images
+without pushing. Nothing in the file is specific to a machine or a person: the throwaway database's user and name and
+the `User-Agent` come from repository variables (`CI_DB_USER`, `CI_DB_NAME`, `CI_NOMINATIM_USER_AGENT`), its password
+from a repository secret (`CI_DB_PASSWORD`), and each has a fallback so a fresh fork runs as is.

@@ -1,5 +1,7 @@
-# Every push and pull request: typecheck, the unit and component suites, the route suites against a real PostGIS, and
-# both container images built (not pushed). The route tests own their database here as they do locally.
+# Every push and pull request: typecheck, the unit and component suites, the route suites against a real PostGIS, the
+# end-to-end run, and both container images built (not pushed). Nothing here is specific to a machine or a person:
+# the throwaway database's name and user come from repository variables, its password from a repository secret, and
+# each has a fallback so a fresh fork runs as is. Set them under Settings → Secrets and variables → Actions.
 name: CI
 on:
   push:
@@ -7,6 +9,11 @@ on:
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
+env:
+  CI_DB_USER: ${{ vars.CI_DB_USER || 'ci' }}
+  CI_DB_NAME: ${{ vars.CI_DB_NAME || 'market_scope_ci' }}
+  CI_DB_PASSWORD: ${{ secrets.CI_DB_PASSWORD || 'ci-only-password' }}
+  CI_NOMINATIM_USER_AGENT: ${{ vars.CI_NOMINATIM_USER_AGENT || format('market-scope-ci/0.1 (+https://github.com/{0})', github.repository) }}
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -14,20 +21,13 @@ jobs:
       postgres:
         image: postgis/postgis:16-3.4
         env:
-          POSTGRES_USER: ms
-          POSTGRES_PASSWORD: ms
-          POSTGRES_DB: market_scope
+          POSTGRES_USER: ${{ vars.CI_DB_USER || 'ci' }}
+          POSTGRES_PASSWORD: ${{ secrets.CI_DB_PASSWORD || 'ci-only-password' }}
+          POSTGRES_DB: ${{ vars.CI_DB_NAME || 'market_scope_ci' }}
         ports: ["5432:5432"]
         options: >-
-          --health-cmd "pg_isready -U ms -d market_scope"
+          --health-cmd "pg_isready -U ${{ vars.CI_DB_USER || 'ci' }}"
           --health-interval 5s --health-timeout 5s --health-retries 10
-    env:
-      DATABASE_URL: postgres://ms:ms@localhost:5432/market_scope
-      TEST_DATABASE_URL: postgres://ms:ms@localhost:5432/market_scope_test
-      NOMINATIM_USER_AGENT: market-scope-ci/0.1 (ci@example.invalid)
-      GEOCODER: fixture
-      PLACES: fixture
-      JOBS: "off"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -35,10 +35,31 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      # The API reads its settings from the environment; these are the throwaway values for this job only.
+      - name: Point the tests at the service container
+        run: |
+          {
+            echo "DATABASE_URL=postgres://${CI_DB_USER}:${CI_DB_PASSWORD}@localhost:5432/${CI_DB_NAME}"
+            echo "TEST_DATABASE_URL=postgres://${CI_DB_USER}:${CI_DB_PASSWORD}@localhost:5432/${CI_DB_NAME}_test"
+            echo "NOMINATIM_USER_AGENT=${CI_NOMINATIM_USER_AGENT}"
+            echo "GEOCODER=fixture"
+            echo "PLACES=fixture"
+            echo "JOBS=off"
+          } >> "$GITHUB_ENV"
       - run: npm run typecheck
       - run: npm test
       - name: Route tests against their own database
         run: npm run test:integration --workspace apps/api
+      - name: Browsers for the end-to-end run
+        run: npx playwright install --with-deps chromium
+      - name: End-to-end
+        run: npx playwright test
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-report
+          path: playwright-report
+          retention-days: 7
   images:
     runs-on: ubuntu-latest
     needs: test
