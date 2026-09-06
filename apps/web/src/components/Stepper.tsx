@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { FileText, Crosshair, Layers } from 'lucide-react';
-import { usePortfolios } from '@/api/hooks';
+import { useCurrentPortfolio } from '@/app/providers';
 
 const STEPS = [
   { href: '/', n: '01', title: 'Portfolio upload', Icon: FileText },
@@ -13,13 +13,13 @@ const STEPS = [
 
 export function Stepper() {
   const path = usePathname();
-  const latest = usePortfolios().data?.[0];                       // newest first; undefined until one exists
+  const { portfolio } = useCurrentPortfolio();                    // null until this session uploads one
 
   // The captions say where the user stands, not what the page is called.
   const hint = (href: string) =>
-    href === '/' ? (latest ? `${latest.name} · ${latest.rowCount} stores` : 'no file yet')
-      : href === '/setup' ? 'choose a city and categories'
-        : 'create the market first';
+    href === '/' ? (portfolio ? `${portfolio.name} · ${portfolio.rowCount} stores` : 'no file yet')
+    : href === '/setup' ? 'choose a city and categories'
+    : 'create the market first';
 
   return (
     <nav className="grid grid-cols-3 border-b border-line bg-panel">

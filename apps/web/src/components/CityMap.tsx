@@ -33,7 +33,7 @@ export default function CityMap({ city, geocoder }: { city: CityBounds | null; g
       {b && (
         <div className="caption flex flex-wrap items-center justify-between gap-x-4 gap-y-1 border-b border-line bg-surface px-4 py-3">
           <span className="flex items-center gap-2"><Square size={14} />
-            {geocoder === 'nominatim' ? 'OSM Nominatim' : 'Google Geocoding API'} bbox · {city!.name} — {b.south.toFixed(4)}, {b.west.toFixed(4)} → {b.north.toFixed(4)}, {b.east.toFixed(4)}
+            {city!.name} · city boundary from {geocoder === 'nominatim' ? 'OSM Nominatim' : 'Google Geocoding'}
           </span>
         </div>
       )}

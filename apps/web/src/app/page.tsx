@@ -13,8 +13,6 @@ import { isApiError } from '@/api/client';
 import { IssueTable } from '@/components/IssueTable';
 
 const MAX_MB = PORTFOLIO_LIMITS.maxFileBytes / 1024 / 1024;
-// The design's second button: a file whose header lacks four columns, to see validation without preparing one.
-const BAD_HEADERS_CSV = 'store_name,address\nFreshMart Koramangala,"80 Feet Road, Koramangala 4th Block"\n';
 const COLUMNS = [...REQUIRED_COLUMNS.map((c) => [c, 'required'] as const), ...OPTIONAL_COLUMNS.map((c) => [c, 'optional'] as const)];
 
 export default function Page() {
@@ -49,13 +47,14 @@ export default function Page() {
               className="flex items-center gap-2 rounded bg-accent px-4 py-2 font-semibold text-accent-fg disabled:opacity-60">
               {upload.isPending ? <Loader size={16} className="animate-spin" /> : <Upload size={16} />} {upload.isPending ? 'Validating…' : 'Choose file'}
             </button>
-            <button type="button" onClick={() => send(new File([BAD_HEADERS_CSV], 'bad-headers.csv', { type: 'text/csv' }))} disabled={upload.isPending}
-              className="flex items-center gap-2 rounded border border-line bg-surface px-4 py-2 font-semibold hover:border-muted disabled:opacity-60">
-              <TriangleAlert size={16} /> Upload a file with bad headers
-            </button>
             <input ref={input} type="file" accept=".csv,.xlsx" className="hidden" onChange={onPick} />
           </div>
         </div>
+
+        {/* A request that never got an answer (service down, rewrite broken) is not an ApiError: say so, in the user's words. */}
+        {upload.isError && !error && (
+          <div className="mt-6 border border-bad bg-surface p-4 md:p-6 font-semibold text-bad" role="alert">Couldn't reach the service. Check your connection and try again.</div>
+        )}
 
         {error && (
           <div className="mt-6 border border-bad bg-surface p-4 md:p-6" role="alert">
@@ -68,7 +67,7 @@ export default function Page() {
           <div className="mt-6 border border-line bg-surface p-4 md:p-6">
             <div className="caption flex items-center gap-2 text-ok"><Check size={14} /> Stored</div>
             <div className="mt-2 flex items-center gap-2 text-lg font-bold"><FileText size={18} /> {upload.data.name}</div>
-            <p className="mt-1 text-muted">{upload.data.rowCount} stores · {upload.data.withCoords} with coordinates · {upload.data.withoutCoords} to geocode</p>
+            <p className="mt-1 text-muted">{upload.data.rowCount} stores · {upload.data.withCoords} with coordinates · {upload.data.withoutCoords} to locate from their address</p>
             {upload.data.warnings.length > 0 && (
               <ul className="mt-3 text-xs text-muted">{upload.data.warnings.map((w, i) => <li key={i}>{w.message}</li>)}</ul>
             )}

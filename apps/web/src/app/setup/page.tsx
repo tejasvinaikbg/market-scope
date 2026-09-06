@@ -43,7 +43,7 @@ export default function Page() {
       <section className="space-y-6 border-b border-line bg-surface p-4 md:overflow-y-auto md:border-b-0 md:border-r md:p-6">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold"><Crosshair size={22} /> Define the market</h1>
-          <p className="mt-1 text-muted">Boundary and categories decide how many places-API calls discovery costs.</p>
+          <p className="mt-1 text-muted">Boundary and categories decide how much store discovery costs.</p>
         </div>
 
         <Field icon={<Globe size={14} />} label="Country" value={countryId ?? ''} onChange={(e) => { setCountryId(Number(e.target.value) || null); setStateId(null); setCityId(null); }}>
@@ -79,18 +79,18 @@ export default function Page() {
         {selected.length > 0 && (
           <div className="space-y-3 border-t border-line pt-5">
             <div className="caption flex items-center gap-1.5"><Database size={14} /> Data sources</div>
-            <Field label="Places / store discovery" value={places} onChange={(e) => setPlaces(e.target.value as typeof places)}>
+            <Field label="Store discovery" value={places} onChange={(e) => setPlaces(e.target.value as typeof places)}>
               <option value="overpass">OSM Overpass</option>
               <option value="google">Google Places API (New)</option>
             </Field>
-            <Field label="Geocoding / city boundary" value={geocoder} onChange={(e) => setGeocoder(e.target.value as typeof geocoder)}>
+            <Field label="Address lookup" value={geocoder} onChange={(e) => setGeocoder(e.target.value as typeof geocoder)}>
               <option value="nominatim">OSM Nominatim</option>
               <option value="google">Google Geocoding API</option>
             </Field>
             <p className="text-xs text-muted">
               {places === 'overpass'
-                ? `Overpass is free and rate-limited: the boundary is split into ~3 km tiles, one query each, at ~1 request/s. Categories map to OSM tags (shop=supermarket, amenity=pharmacy, …).`
-                : `Nearby Search is billed per request — 20 results a page, up to 3 pages. Categories map to Places types (supermarket, pharmacy, grocery_or_supermarket, convenience_store).`}
+                ? `Free, community-maintained data. Slower: about one request per second, one per 3 km tile of the boundary.`
+                : `Paid per request, up to 60 results per tile. Faster, and usually more complete for chains.`}
             </p>
           </div>
         )}
@@ -103,7 +103,7 @@ export default function Page() {
               <span className="text-muted">km² / {MAX_MARKET_AREA_SQ_KM} km² cap</span>
             </div>
             <div className="h-1 w-full bg-line"><div className={`h-full ${over ? 'bg-bad' : 'bg-accent'}`} style={{ width: `${Math.min(100, (area / MAX_MARKET_AREA_SQ_KM) * 100)}%` }} /></div>
-            {dims && <p className="text-xs text-muted">{dims.widthKm.toFixed(1)} × {dims.heightKm.toFixed(1)} km · ≈ {calls} {places === 'overpass' ? 'Overpass queries' : 'Nearby Search calls'}</p>}
+            {dims && <p className="text-xs text-muted">{dims.widthKm.toFixed(1)} × {dims.heightKm.toFixed(1)} km · ≈ {calls} calls</p>}
             {over && <p className="font-medium text-bad">Over the {MAX_MARKET_AREA_SQ_KM} km² cap — shrink the rectangle to continue.</p>}
           </div>
         )}

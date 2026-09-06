@@ -1,8 +1,8 @@
 'use client';
 /**
- * Brand, live API status, and the LIGHT / DARK toggle from the design header.
- * The status square carries meaning: muted + spinner while connecting, green when API and database answer,
- * red when either is down — and the label says which one.
+ * Brand and the LIGHT / DARK toggle from the design header, plus a connection notice that speaks only when
+ * something is wrong: nothing while the service answers, a muted "Connecting…" at first, a red notice when the
+ * service or its database cannot be reached. Which of the two it is stays in the tooltip — a user cannot act on it.
  */
 import { useQuery } from '@tanstack/react-query';
 import { useTheme } from 'next-themes';
@@ -18,11 +18,12 @@ async function fetchHealth(): Promise<Health> {
   return res.json();
 }
 
+// The user's words, not ours: "service", never "API" or "database". `online` renders nothing — a working tool is silent.
 const STATUS = {
-  connecting: { dot: 'bg-muted', text: 'text-muted', label: 'connecting' },
-  online: { dot: 'bg-ok', text: 'text-ok', label: 'API online' },
-  dbDown: { dot: 'bg-bad', text: 'text-bad', label: 'database offline' },
-  apiDown: { dot: 'bg-bad', text: 'text-bad', label: 'API offline' },
+  connecting: { dot: 'bg-muted', text: 'text-muted', label: 'Connecting…', detail: 'Waiting for the first health check' },
+  online: null,
+  dbDown: { dot: 'bg-bad', text: 'text-bad', label: "Can't reach the service · retrying", detail: 'The API answers but its database does not' },
+  apiDown: { dot: 'bg-bad', text: 'text-bad', label: "Can't reach the service · retrying", detail: 'The API is not answering' },
 } as const;
 
 export function AppHeader() {
@@ -42,12 +43,14 @@ export function AppHeader() {
         <span className="caption">Portfolio universe &amp; store discovery</span>
       </div>
       <div className="flex items-center gap-4">
-        <span className={`caption flex items-center gap-2 ${ui.text}`} role="status" aria-live="polite">
-          {state === 'connecting'
-            ? <Loader size={14} className="animate-spin" />
-            : <span className={`inline-block h-2 w-2 ${ui.dot}`} />}
-          {ui.label}
-        </span>
+        {ui && (
+          <span className={`caption flex items-center gap-2 ${ui.text}`} role="status" aria-live="polite" title={ui.detail}>
+            {state === 'connecting'
+              ? <Loader size={14} className="animate-spin" />
+              : <span className={`inline-block h-2 w-2 ${ui.dot}`} />}
+            {ui.label}
+          </span>
+        )}
         {mounted && (
           <div className="flex overflow-hidden rounded border border-line">
             {(['light', 'dark'] as const).map((t) => (

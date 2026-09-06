@@ -9,6 +9,7 @@ export function IssueTable({ issues }: { issues: FileIssue[] }) {
           <tr className="caption text-left"><th className="py-2 pr-4 font-normal">Row</th><th className="py-2 pr-4 font-normal">Column</th><th className="py-2 font-normal">Problem</th></tr>
         </thead>
         <tbody>
+          {/* A comment inside <tr> would become a whitespace text node, which HTML forbids in a table row — so it sits here. Header issues have no row. */}
           {issues.map((issue, i) => (
             <tr key={i} className="border-t border-line align-top">
               <td className="py-2 pr-4 tabular-nums text-muted">{issue.row ?? '—'}</td>
