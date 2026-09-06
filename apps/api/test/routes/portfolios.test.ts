@@ -68,15 +68,15 @@ test('the name defaults to the filename without its extension', async () => {
 });
 
 test('bad headers and bad rows are 400s with details, and nothing is stored', async () => {
-  const before = Number((await db('portfolios').count('* as n').first())?.n);
+  const mine = () => db('portfolios').where({ name: 'stores' }).count('* as n').first().then((r) => Number(r?.n));   // this suite's own rows: other suites delete theirs in parallel
+  const before = await mine();
   const headers = await upload('store_name,address\nA,B');
   assert.equal(headers.status, 400);
   assert.equal(headers.body.error.code, 'INVALID_HEADERS');
   const rows = await upload(`${HEADER}\nA,Addr,Bengaluru,Karnataka,India,Supermarket,95,77.6`);
   assert.equal(rows.body.error.code, 'INVALID_ROWS');
   assert.equal(rows.body.error.details[0].row, 2);
-  const afterwards = Number((await db('portfolios').count('* as n').first())?.n);
-  assert.equal(afterwards, before);
+  assert.equal(await mine(), before);
 });
 
 test('no file, wrong extension, and a file over 5 MB', async () => {

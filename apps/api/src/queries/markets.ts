@@ -21,6 +21,7 @@ export interface MarketRow {
   categories: Array<{ id: number; slug: string; name: string }>;
   status: MarketStatus; error: string | null; startedAt: Date | null; completedAt: Date | null;
   progress: MarketProgress | null;                      // null until discovery starts
+  geocoding: { total: number; done: number; failed: number };   // the portfolio's stores that needed locating, and how it went
   storeCount: number;                                   // discovered so far; grows while discovery runs
   createdAt: Date;
 }
@@ -32,6 +33,9 @@ const SELECT_MARKET = `
          m.area_sq_km, m.places_provider, m.geocoder_provider, m.created_at,
          m.status, m.error, m.started_at, m.completed_at, m.progress,
          (SELECT COUNT(*) FROM discovered_stores d WHERE d.market_id = m.id)::int AS store_count,
+         (SELECT COUNT(*) FROM portfolio_stores s WHERE s.portfolio_id = m.portfolio_id AND s.location_source IS DISTINCT FROM 'uploaded')::int AS geo_total,
+         (SELECT COUNT(*) FROM portfolio_stores s WHERE s.portfolio_id = m.portfolio_id AND s.location_source = 'geocoded')::int AS geo_done,
+         (SELECT COUNT(*) FROM portfolio_stores s WHERE s.portfolio_id = m.portfolio_id AND s.location IS NULL AND s.geocode_status IS NOT NULL)::int AS geo_failed,
          COALESCE((SELECT json_agg(json_build_object('id', cat.id, 'slug', cat.slug, 'name', cat.name) ORDER BY cat.id)
                      FROM market_categories mc JOIN categories cat ON cat.id = mc.category_id WHERE mc.market_id = m.id), '[]') AS categories
     FROM markets m
@@ -43,7 +47,8 @@ const toMarket = (r: Record<string, any>): MarketRow => ({
   id: r.id, name: r.name, portfolioId: r.portfolio_id, portfolioName: r.portfolio_name, cityId: r.city_id, cityName: r.city_name,
   boundary: { south: r.south, west: r.west, north: r.north, east: r.east }, areaSqKm: Number(r.area_sq_km),
   placesProvider: r.places_provider, geocoderProvider: r.geocoder_provider, categories: r.categories,
-  status: r.status, error: r.error, startedAt: r.started_at, completedAt: r.completed_at, progress: r.progress, storeCount: r.store_count, createdAt: r.created_at,
+  status: r.status, error: r.error, startedAt: r.started_at, completedAt: r.completed_at, progress: r.progress, storeCount: r.store_count,
+  geocoding: { total: r.geo_total, done: r.geo_done, failed: r.geo_failed }, createdAt: r.created_at,
 });
 
 export interface NewMarket {

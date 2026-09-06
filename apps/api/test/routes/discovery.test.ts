@@ -26,6 +26,7 @@ before(async () => {
   form.append('name', 'test-discovery');
   form.append('file', new Blob([await readFile(new URL('../../fixtures/sample_portfolio_bengaluru.csv', import.meta.url), 'utf8')]), 'sample.csv');
   portfolioId = (await (await fetch(`${base}/api/portfolios`, { method: 'POST', body: form })).json()).id;
+  await fetch(`${base}/api/cities/1/bbox`);                                                     // the pipeline's geocoding step needs the city box
 });
 after(async () => {
   if (markets.length) await db('markets').whereIn('id', markets).del();   // stores and jobs go with them (ON DELETE CASCADE)

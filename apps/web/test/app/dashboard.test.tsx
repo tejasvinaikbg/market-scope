@@ -9,7 +9,7 @@ const base = {
   id: 7, name: 'Bengaluru · sample', portfolioId: 1, portfolioName: 'sample', cityId: 1, cityName: 'Bengaluru',
   boundary: { south: 12.92, west: 77.6, north: 12.956, east: 77.646 }, areaSqKm: 19.8797, placesProvider: 'overpass', geocoderProvider: 'nominatim',
   categories: [{ id: 1, slug: 'supermarket', name: 'Supermarket' }, { id: 2, slug: 'pharmacy', name: 'Pharmacy' }], createdAt: '',
-  status: 'pending', error: null, startedAt: null, completedAt: null, storeCount: 0, progress: null,
+  status: 'pending', error: null, startedAt: null, completedAt: null, storeCount: 0, progress: null, geocoding: { total: 3, done: 0, failed: 0 },
 };
 const withMarket = (overrides: Record<string, unknown>) => mockApi({ 'GET /api/markets/7': { body: { ...base, ...overrides } } });
 
@@ -28,10 +28,16 @@ test('running shows progress and the count so far; ready shows the total', async
   expect(await screen.findByRole('status')).toHaveTextContent('Discovering stores… 2 of 4 areas searched · 47 found so far');
 });
 
+test('while the portfolio is being located, the page says so before discovery starts', async () => {
+  withMarket({ status: 'running', progress: null, geocoding: { total: 3, done: 1, failed: 1 } });
+  renderApp(<Page />);
+  expect(await screen.findByRole('status')).toHaveTextContent('Locating your stores from their addresses… 2 of 3');
+});
+
 test('ready, partial and failed each say what happened', async () => {
-  withMarket({ status: 'ready', storeCount: 71, progress: { tiles: 4, done: 4, failed: 0 }, completedAt: '2026-09-06T10:00:00Z' });
+  withMarket({ status: 'ready', storeCount: 71, progress: { tiles: 4, done: 4, failed: 0 }, completedAt: '2026-09-06T10:00:00Z', geocoding: { total: 3, done: 2, failed: 1 } });
   const { unmount } = renderApp(<Page />);
-  expect(await screen.findByRole('status')).toHaveTextContent('71 stores discovered across 4 areas.');
+  expect(await screen.findByRole('status')).toHaveTextContent('71 stores discovered across 4 areas. 2 of 3 of your stores located from their address, 1 not found.');
   unmount();
 
   withMarket({ status: 'partial', storeCount: 50, progress: { tiles: 4, done: 4, failed: 1 }, error: 'tile 2/4: overpass 504 from https://a/' });

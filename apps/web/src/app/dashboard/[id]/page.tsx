@@ -9,14 +9,22 @@ import Link from 'next/link';
 import { Layers, Info, ArrowRight, Loader, Check, TriangleAlert } from 'lucide-react';
 import { useMarket, type Market } from '@/api/hooks';
 
+/** How the portfolio's own stores fared, when any needed locating: appended to the finished states. */
+const located = (g: Market['geocoding']) => (g.total === 0 ? '' : ` ${g.done} of ${g.total} of your stores located from their address${g.failed ? `, ${g.failed} not found` : ''}.`);
+
 /** What to say about discovery, per status. One place, so the words stay consistent. */
 function DiscoveryStatus({ m }: { m: Market }) {
   const p = m.progress;
+  const g = m.geocoding;
   const bar = p && p.tiles > 0 ? Math.round((p.done / p.tiles) * 100) : 0;
   switch (m.status) {
     case 'pending':
       return <p className="flex items-center gap-2 text-muted"><Loader size={16} className="animate-spin" /> Discovery is queued and starts in a moment.</p>;
     case 'running':
+      // Two phases: the portfolio's own stores are located from their addresses first, then the area is searched.
+      if (!p && g.total > 0) {
+        return <p className="flex items-center gap-2"><Loader size={16} className="animate-spin text-accent" /> Locating your stores from their addresses… {g.done + g.failed} of {g.total}</p>;
+      }
       return (
         <div className="space-y-2">
           <p className="flex items-center gap-2"><Loader size={16} className="animate-spin text-accent" /> Discovering stores… {p ? `${p.done} of ${p.tiles} areas searched` : 'starting'} · {m.storeCount} found so far</p>
@@ -24,7 +32,7 @@ function DiscoveryStatus({ m }: { m: Market }) {
         </div>
       );
     case 'ready':
-      return <p className="flex items-center gap-2 text-ok"><Check size={16} /> {m.storeCount} stores discovered{p ? ` across ${p.tiles} areas` : ''}.</p>;
+      return <p className="flex items-center gap-2 text-ok"><Check size={16} /> {m.storeCount} stores discovered{p ? ` across ${p.tiles} areas` : ''}.{located(g)}</p>;
     case 'partial':
       return (
         <div className="space-y-1">

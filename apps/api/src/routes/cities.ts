@@ -1,3 +1,6 @@
+/**
+ * GET /api/cities/:id/bbox — a city's bounding box and centre, geocoded once and cached on the city row.
+ */
 import { Router } from 'express'
 import { cacheFor } from '../middleware/cache-control.ts';
 import { z } from '../openapi/zod.ts'

@@ -1,3 +1,7 @@
+/**
+ * The root layout: the providers, the header and the stepper around every screen. `suppressHydrationWarning` because
+ * next-themes sets the theme class on <html> before React hydrates.
+ */
 import type { ReactNode } from 'react';
 import { Providers } from './providers';
 import { AppHeader } from '@/components/AppHeader';

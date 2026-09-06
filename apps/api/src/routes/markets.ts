@@ -19,6 +19,7 @@ const Market = z.object({
   status: z.enum(['pending', 'running', 'ready', 'partial', 'failed']), error: z.string().nullable(),
   startedAt: z.string().nullable(), completedAt: z.string().nullable(), storeCount: z.number(),
   progress: z.object({ tiles: z.number(), done: z.number(), failed: z.number() }).nullable(),
+  geocoding: z.object({ total: z.number(), done: z.number(), failed: z.number() }),
 }).openapi('Market');
 const CreateMarket = z.object({
   name: z.string().trim().min(1).max(120).optional(),

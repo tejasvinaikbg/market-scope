@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgis/postgis:16-3.4-alpine
+    image: postgis/postgis:16-3.4   # the Debian build has an arm64 image; alpine is amd64-only
     container_name: market-scope-db
     restart: unless-stopped
     environment:

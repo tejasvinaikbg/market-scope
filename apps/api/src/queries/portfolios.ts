@@ -3,7 +3,7 @@
  * service can pass a transaction and tests can pass the plain db.
  */
 import type { Knex } from 'knex';
-import type { Bbox, PortfolioRowInput } from '@market-scope/shared';
+import type { Bbox, LatLng, PortfolioRowInput } from '@market-scope/shared';
 import { db, type Db } from '../db/knex.ts';
 
 export interface PortfolioRow { id: number; name: string; sourceFilename: string; rowCount: number; createdAt: Date }
@@ -62,5 +62,23 @@ export const portfoliosQueries = {
 
   async list(k: Db = db): Promise<PortfolioRow[]> {
     return (await k('portfolios').orderBy('created_at', 'desc')).map(toPortfolio);
+  },
+
+  /** The stores still without a point, with what the geocoder needs to find them. Row order, so a re-run is predictable. */
+  async storesToGeocode(portfolioId: number, k: Db = db): Promise<Array<{ id: number; address: string; city: string; state: string; country: string }>> {
+    return k('portfolio_stores').select('id', 'address', 'city', 'state', 'country').where({ portfolio_id: portfolioId }).whereNull('location').orderBy('row_number');
+  },
+
+  /** A found address: the point, marked as geocoded (the CHECK from Phase 2 ties location and location_source together). */
+  async setGeocoded(id: number, point: LatLng, k: Db = db): Promise<void> {
+    await k('portfolio_stores').where({ id }).update({
+      location: k.raw('ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography', [point.lng, point.lat]),   // x = lng, y = lat
+      location_source: 'geocoded', geocode_status: 'ok', geocoded_at: k.fn.now(),
+    });
+  },
+
+  /** An address that was not found, or a failure after retries. The store stays unplaced; the dashboard can say why. */
+  async setGeocodeStatus(id: number, status: 'not_found' | 'error', k: Db = db): Promise<void> {
+    await k('portfolio_stores').where({ id }).update({ geocode_status: status, geocoded_at: k.fn.now() });
   },
 };

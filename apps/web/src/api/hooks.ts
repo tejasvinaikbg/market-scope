@@ -20,6 +20,7 @@ export type Market = {
   status: 'pending' | 'running' | 'ready' | 'partial' | 'failed'; error: string | null;
   startedAt: string | null; completedAt: string | null; storeCount: number;
   progress: { tiles: number; done: number; failed: number } | null;
+  geocoding: { total: number; done: number; failed: number };
 };
 export type ProviderOption = { id: 'overpass' | 'nominatim' | 'google'; name: string; enabled: boolean; reason: 'not configured' | 'disabled' | null };
 export type Providers = { places: ProviderOption[]; geocoding: ProviderOption[] };
