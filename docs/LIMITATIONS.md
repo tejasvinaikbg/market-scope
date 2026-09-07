@@ -25,6 +25,14 @@ shortcoming names the register row in [PRODUCTION.md](PRODUCTION.md) that would 
   neighbourhood-level fallback are row 22.
 - **A workbook's rich text and formulas are flattened to text**; a cell error becomes an empty value.
 - **The tile cache expires by age only.** No purge, no way to force a fresh answer before the 24 hours (row 18).
+- **`TILE_CACHE_HOURS` has no upper bound.** It is validated as a non-negative number with no ceiling, so a large value
+  (weeks, a year) is accepted and silently trades freshness for fewer calls: closed shops linger and new ones never
+  appear until the entry ages out. The default of 24 hours is the safe balance; a production build would cap it and,
+  with the refresh flag, let a user force today's answer (row 18).
+- **Two markets discovering the same cell at once both call the provider.** The cache is checked, then written, with no
+  lock between, so a cell not yet cached can be fetched twice before the first write lands. The upsert
+  (`ON CONFLICT … DO UPDATE`) makes the double write harmless — same data, last write wins — so the only cost is one
+  wasted provider call in that race. A single shared throttle and the cache keep it rare.
 
 ### Runtime
 
