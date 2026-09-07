@@ -12,6 +12,7 @@ users, every scaling limit with its options weighed, and the register of what wo
 4. [Ten million and beyond](#ten-million-and-beyond)
 5. [Each scaling limit, with its options](#each-scaling-limit-with-its-options)
 6. [The upgrade register](#the-upgrade-register)
+7. [Inbound rate limiting in depth](#inbound-rate-limiting-in-depth)
 
 ## The short version
 
@@ -223,6 +224,8 @@ the configured number, and a client that happens to land on a fresh instance sta
 **Pick.** Edge rules for the crude protection, Redis store when per-user quotas arrive with authentication. **Trigger:** the
 second API instance.
 
+The full menu of inbound options in code and infra, with boilerplate, is in [Inbound rate limiting in depth](#inbound-rate-limiting-in-depth) below.
+
 ---
 
 ### 5. One database, one pool of ten
@@ -377,3 +380,180 @@ It would not hold, and no single-node configuration would. What breaks, in order
 What already holds at that scale: the API keeps no state in memory, so instances multiply freely; the queue is transactional
 and multi-worker safe; discovery is idempotent, so retries and re-runs are harmless; every third-party call is throttled,
 identified and retried in one place.
+
+## Inbound rate limiting in depth
+
+Everything that can be done to protect **this API from its clients** — how fast a caller may hit it — beyond the one
+global limiter shipping today. This is the opposite direction from the outbound throttle in
+`apps/api/src/lib/http.ts`, which limits how fast _we_ call Overpass, Nominatim and Google (register rows 19–20); this
+section is inbound only. Nothing here is built — the brief is one user at a few markets a day — so each item names its
+register row, and the boilerplate is illustrative.
+
+### What exists today
+
+One global limiter in [`apps/api/src/app.ts`](../apps/api/src/app.ts): `express-rate-limit`, a one-minute fixed window,
+`RATE_LIMIT_PER_MINUTE` (default 300) requests per client, a `429 RATE_LIMITED` past it, and
+`app.set('trust proxy', TRUST_PROXY)` so the client IP is read from `X-Forwarded-For` behind a balancer rather than the
+balancer's own IP being limited.
+
+```ts
+if (settings.RATE_LIMIT_PER_MINUTE > 0) {
+  app.use(
+    rateLimit({
+      windowMs: 60_000,
+      limit: settings.RATE_LIMIT_PER_MINUTE,
+      standardHeaders: true, // send RateLimit-* headers
+      legacyHeaders: false,
+      handler: (_req, res) => res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many requests; try again in a minute' } }),
+    }),
+  );
+}
+```
+
+Its two honest limits: the count is **per process**, so N instances allow N× the number (limit 4 above, register row
+6), and there is **one limit for every route** regardless of cost (register row 20).
+
+### Code-level options
+
+**Per-route and per-method limits (row 20).** A market creation kicks off dozens of external calls; a dashboard read is
+cheap. Mount a strict limiter on writes, a generous one on reads:
+
+```ts
+const writes = rateLimit({ windowMs: 60_000, limit: 10, standardHeaders: true, legacyHeaders: false });
+const reads = rateLimit({ windowMs: 60_000, limit: 300, standardHeaders: true, legacyHeaders: false });
+
+app.post('/api/portfolios', writes, uploadHandler); // uploads: expensive, rare
+app.post('/api/markets', writes, createMarketHandler); // discovery: expensive
+app.use('/api', reads); // everything else: cheap
+```
+
+**Per-user quotas, not just per-IP (rows 6, 16).** Per-IP punishes a shared office address and is dodged by a botnet.
+Once there is authentication, key on the user id, falling back to the IPv6-safe IP helper for anonymous routes:
+
+```ts
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+
+const perUser = rateLimit({
+  windowMs: 60_000,
+  limit: 300,
+  keyGenerator: (req, res) => req.user?.id ?? ipKeyGenerator(req, res),
+});
+```
+
+**Weighted / cost-based limiting.** Count _cost_, not requests: price each route and debit a per-client budget.
+`express-rate-limit` counts requests only; `rate-limiter-flexible` consumes points:
+
+```ts
+import { RateLimiterMemory } from 'rate-limiter-flexible';
+
+const budget = new RateLimiterMemory({ points: 100, duration: 60 }); // 100 points / minute / client
+const cost = { 'POST /api/markets': 20, 'POST /api/portfolios': 20, default: 1 };
+
+app.use(async (req, res, next) => {
+  const price = cost[`${req.method} ${req.path}`] ?? cost.default;
+  try {
+    await budget.consume(req.user?.id ?? req.ip, price);
+    next();
+  } catch {
+    res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Quota exhausted; try again shortly' } });
+  }
+});
+```
+
+**Tell the client when to return: `Retry-After`.** A 429 without it invites blind retries. Send the seconds to wait:
+
+```ts
+handler: (req, res) => {
+  const retryMs = req.rateLimit.resetTime ? req.rateLimit.resetTime.getTime() - Date.now() : 60_000;
+  res.set('Retry-After', String(Math.ceil(retryMs / 1000)));
+  res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many requests' } });
+};
+```
+
+**Slow down before blocking.** `express-slow-down` adds growing latency as a client nears the limit — gentler
+back-pressure that legitimate clients absorb and abusers feel:
+
+```ts
+import slowDown from 'express-slow-down';
+
+app.use(
+  slowDown({
+    windowMs: 60_000,
+    delayAfter: 200, // no delay for the first 200 requests/min
+    delayMs: (used, req) => (used - req.slowDown.limit) * 250, // then +250 ms each
+  }),
+);
+```
+
+**Idempotency keys on writes.** Rate limiting caps how often; idempotency removes the reason to retry fast. The client
+sends an `Idempotency-Key`; the server records it with the first response and replays it for repeats, so a retried
+market creation never runs twice:
+
+```ts
+app.post('/api/markets', async (req, res) => {
+  const key = req.get('Idempotency-Key');
+  if (key) {
+    const prior = await idempotency.get(key); // a small table or Redis, keyed by (user, key)
+    if (prior) return res.status(prior.status).json(prior.body);
+  }
+  const result = await createMarket(req.body);
+  if (key) await idempotency.set(key, { status: 201, body: result });
+  res.status(201).json(result);
+});
+```
+
+**Resource limits are rate limits too.** Already in place: `express.json({ limit: '1mb' })` and the 5 MB upload cap
+bound cost by _size_, not count. A request timeout and a max query length belong in the same category.
+
+### Infra-level options
+
+**A shared counter across instances (rows 4, 6).** The moment there is a second instance, the in-memory count is wrong.
+Move the store to Redis so all instances share one true count:
+
+```ts
+import { RedisStore } from 'rate-limit-redis';
+import { createClient } from 'redis';
+
+const redis = createClient({ url: process.env.REDIS_URL });
+await redis.connect();
+
+app.use(
+  rateLimit({
+    windowMs: 60_000,
+    limit: settings.RATE_LIMIT_PER_MINUTE,
+    store: new RedisStore({ sendCommand: (...args) => redis.sendCommand(args) }),
+  }),
+);
+```
+
+**Enforce at the edge.** Drop abusive traffic _before_ a Node process — cheaper, and the only thing that survives a
+volumetric flood the app could never count. A CDN/WAF rule (Cloudflare, AWS WAF) or a balancer zone. nginx, for
+illustration:
+
+```nginx
+limit_req_zone  $binary_remote_addr zone=api:10m rate=5r/s;   # ~300/min, bursts allowed
+limit_conn_zone $binary_remote_addr zone=conn:10m;            # concurrent connections per IP
+
+server {
+  location /api/ {
+    limit_req  zone=api burst=20 nodelay;
+    limit_conn conn 20;
+    proxy_pass http://api_upstream;
+  }
+}
+```
+
+**A WAF or API gateway.** For patterns a counter cannot catch — credential stuffing, scrapers, layer-7 DDoS — a WAF
+(Cloudflare, AWS WAF, Google Cloud Armor) sits in front. If the API becomes a platform, a gateway (Kong, AWS API
+Gateway, Apigee) centralises API keys, per-plan quotas and per-consumer tiers in one managed place.
+
+**Connection-level backstops.** Under the request limiter, cap concurrent connections per IP at the balancer (the
+`limit_conn` above) and set server timeouts, so a client opening thousands of slow connections (Slowloris) is bounded
+before the counter even engages.
+
+### What to reach for first
+
+Edge enforcement and the Redis-backed shared counter come first: volumetric abuse should die before it touches a Node
+process, and a per-process count is only exact for one instance. Per-route (row 20) and per-user (rows 6, 16) limits
+follow with authentication. Cost-based limiting, slow-down and idempotency are refinements for a specific route's abuse
+profile. Each is in the register with its trigger rather than built now.
