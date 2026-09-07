@@ -41,7 +41,12 @@ function GoogleGround({ apiKey }: { apiKey: string }) {
       (window as unknown as { L?: unknown }).L ??= await import('leaflet'); // the mutant's last line registers a factory on a global Leaflet; the ES build sets none
       const { default: Mutant } = await import('leaflet.gridlayer.googlemutant/src/Leaflet.GoogleMutant.mjs'); // the ES source: see src/types
       if (gone) return;
-      layer = new Mutant({ type: 'roadmap' }).addTo(map);
+      const ground = new Mutant({ type: 'roadmap' });
+      // The mutant lowers its maxNativeZoom whenever Google's zoom lags Leaflet's by a frame (it did, on every fit to the
+      // boundary) and never raises it again, leaving its grid two levels behind the map. Google has road data at every
+      // zoom this app uses, so the check is switched off on the instance.
+      Object.assign(ground, { _checkZoomLevels() {} });
+      layer = ground.addTo(map);
     })().catch((err) => console.error('Google map failed to load; the map stays without a ground', err));
     return () => {
       gone = true;
