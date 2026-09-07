@@ -64,6 +64,6 @@ test('upload, define, watch, read, pick, run again, list, delete', async ({ page
 test('a bad file is refused with its rows named, and nothing is stored', async ({ page }) => {
   await page.goto('/');
   await page.setInputFiles('input[type=file]', 'apps/api/fixtures/failure_portfolio_bengaluru.csv');
-  await expect(page.getByRole('alert')).toBeVisible();
+  await expect(page.getByRole('alert').filter({ hasText: 'nothing was stored' })).toBeVisible(); // not Next's route announcer, which is an alert too
   await expect(page.getByText('no file yet')).toBeVisible();
 });
