@@ -117,20 +117,15 @@ images are built.
 
 | Document | For |
 |---|---|
-| [Architecture](docs/ARCHITECTURE.md) | how the pieces fit, with diagrams, the run pipeline and the data model |
-| [High-level design](docs/design/HLD.md) | today's shape and how it changes at a million and ten million users, with the trade-offs |
-| [Low-level design](docs/design/LLD.md) | modules, contracts, the state machine, sequences, the SQL that carries the product |
+| [Architecture](docs/ARCHITECTURE.md) | how the pieces fit, with diagrams, the run pipeline, the state machine, the SQL that carries the product, and the conventions |
 | [Database](docs/DATABASE.md) | every table and column, the links between them, and who reads and writes what |
 | [Configuration](docs/CONFIGURATION.md) | every environment variable, its default and when to change it |
 | [API](docs/API.md) | the endpoints in one page; the live reference is `/api/docs` |
 | [Testing](docs/TESTING.md) | the suites, how they isolate themselves, what the fixtures are |
-| [Shortcomings](docs/SHORTCOMINGS.md) | what was deliberately left out or simplified, and why |
-| [Known issues](docs/KNOWN-ISSUES.md) | things that are wrong or surprising today |
-| [Roadmap](docs/ROADMAP.md) | what comes next, in order |
+| [Limitations](docs/LIMITATIONS.md) | what was left out on purpose, what is wrong today, and what comes next |
 | [Production](docs/PRODUCTION.md) | the deployment plan by stage, each scaling limit with its options, and the upgrade register |
 | [Troubleshooting](docs/TROUBLESHOOTING.md) | symptoms, causes and fixes for the things that go wrong locally |
 | [Google setup](docs/GOOGLE-SETUP.md) | getting and restricting the keys the Google providers need |
-| [Contributing](docs/CONTRIBUTING.md) | the conventions the code follows |
 
 ## Status
 
@@ -138,10 +133,10 @@ Built and verified: upload, market setup, discovery with an in-database job queu
 placement, the dashboard with four layers, matching, run again, edit and delete; container images, a compose profile
 for the stack, CI; Google Places (New) and Google Geocoding as second sources, chosen per market, and the Google map, all behind keys
 ([Google setup](docs/GOOGLE-SETUP.md)). Test counts at the time of writing: 14 shared, 65 API unit, 49 API route, 53 web,
-3 end-to-end.
+4 end-to-end.
 
 The map draws on Google once the browser key is set, and on OpenStreetMap tiles otherwise. What comes next is in the
-[roadmap](docs/ROADMAP.md).
+[roadmap](docs/LIMITATIONS.md#roadmap).
 
 ## Data sources and attribution
 

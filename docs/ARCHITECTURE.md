@@ -28,6 +28,27 @@ real path: the browser calls the API's domain directly and the web server only s
 - **`packages/shared`**: pure TypeScript both sides import: boundary maths, the portfolio file contract, constants such
   as the area cap and the match distance, so the screen's numbers and the server's rules cannot drift.
 
+## Where the code lives
+
+| Path | Responsibility |
+|---|---|
+| `packages/shared/src/geo.ts` | boundary maths: area, dimensions, grid cells, containment, the area cap, the default market, the match distance |
+| `packages/shared/src/portfolio.ts` | the file contract: required and optional headers, row validation, the issue shape |
+| `apps/api/src/config.ts` | one zod schema for every variable; the process fails at start-up with the variable named |
+| `apps/api/src/app.ts` | the Express app: helmet, compression, CORS, rate limit, request log, routes, OpenAPI, the error handler, the 404 |
+| `apps/api/src/routes/*` | one router per resource; zod parses params, query and body; hands off, never decides |
+| `apps/api/src/services/*` | the rules: the market ladder, the upload's validate-then-store, run again, edit, delete |
+| `apps/api/src/queries/*` | every SQL statement, one file per table group; each takes the connection last so a transaction can be passed |
+| `apps/api/src/providers/*` | `Geocoder` and `PlacesProvider` interfaces; Nominatim, Google Geocoding, Overpass, Google Places (New), the fixture twins; one resolver rule for a market's choices; availability |
+| `apps/api/src/lib/http.ts` | the one outbound client: throttle (`p-throttle`), retry with backoff (`p-retry`), timeout, `User-Agent` |
+| `apps/api/src/jobs/*` | the queue runner and the four pipeline steps; `pipeline.ts` orders them |
+| `apps/api/src/openapi/*` | the registry the routes describe themselves into; the document served at `/api/docs` |
+| `apps/web/src/api/client.ts` | typed fetch: JSON in and out, the error envelope as `ApiError`, 204 as nothing |
+| `apps/web/src/api/hooks.ts` | one React Query hook per endpoint; polling rules; the mutations |
+| `apps/web/src/app/providers.tsx` | theme, query client, and the session: the portfolio uploaded and the market open |
+| `apps/web/src/app/{page,setup,dashboard}` | the three screens; `dashboard/[id]` is the market, `dashboard` the list |
+| `apps/web/src/components/*` | the maps (Leaflet, client-only), the stepper, the layer vocabulary, the category icons |
+
 ## A market's run
 
 ![The pipeline](diagrams/pipeline.svg)
@@ -46,6 +67,14 @@ the market: the run ends `partial` with the cells named.
 
 Every step rewrites its own rows, which is what makes "run again", an edit, and recovery after a crashed worker all the
 same operation: queue the job once more.
+
+### Discovery's grid and cache
+
+Cells are `GRID_CELL_DEG` (0.025°, about 2.8 km) squares aligned to the world, not to the market, so two markets that
+overlap share cells. A cell's key is its integer coordinates; the cache key is `(provider, cell, categories sorted)`.
+The source is asked for the whole cell (Overpass in one query; Google in one query per place type, paged, a crowded
+cell split into quarters once) and everything that comes back is cached; only what lies inside the market's rectangle
+is stored for the market. A cached answer older than `TILE_CACHE_HOURS` is asked for again and overwritten.
 
 ## Data model
 
@@ -84,15 +113,101 @@ shows as "not configured" until its key is set. All outbound calls go through on
 (one request a second for the OpenStreetMap mirrors, ten for Google), identifies itself, times out and retries. The map's ground is OpenStreetMap tiles, or Google's map through Leaflet when
 the browser key is set; everything drawn on it is Leaflet either way.
 
+
+## State
+
+```mermaid
+stateDiagram-v2
+  [*] --> pending: create · edit · run again
+  pending --> running: worker claims the job
+  running --> ready: every cell answered
+  running --> partial: some cells failed after retries
+  running --> failed: every cell failed
+  ready --> pending: run again · edit
+  partial --> pending: run again · edit
+  failed --> pending: run again · edit
+```
+
+A job: `pending → running → done | failed`; a retry is a pending job with a later `run_after`; a job still running after
+`JOB_STALE_MINUTES` is claimed again as if abandoned.
+
+## The SQL that carries the product
+
+**Claiming a job**, safe for any number of workers:
+
+```sql
+UPDATE jobs SET status = 'running', attempts = attempts + 1, updated_at = now()
+ WHERE id = (SELECT id FROM jobs
+              WHERE (status = 'pending' AND run_after <= now())
+                 OR (status = 'running' AND updated_at < now() - (:staleMinutes * interval '1 minute'))
+              ORDER BY created_at LIMIT 1 FOR UPDATE SKIP LOCKED)
+ RETURNING *;
+```
+
+**Placing every portfolio store** in one statement (`ST_Covers` includes points exactly on the edge):
+
+```sql
+INSERT INTO market_portfolio_stores (market_id, portfolio_store_id, placement, placed_at)
+SELECT m.id, s.id,
+       CASE WHEN s.location IS NULL THEN 'unlocated'
+            WHEN ST_Covers(m.boundary, s.location::geometry) THEN 'inside' ELSE 'outside' END, now()
+  FROM markets m JOIN portfolio_stores s ON s.portfolio_id = m.portfolio_id
+ WHERE m.id = :id
+ON CONFLICT (market_id, portfolio_store_id) DO UPDATE SET placement = EXCLUDED.placement, placed_at = EXCLUDED.placed_at;
+```
+
+**Matching**: the nearest discovered store of the same category within the radius, per portfolio store, after clearing
+last run's pairs:
+
+```sql
+UPDATE market_portfolio_stores p
+   SET matched_store_id = near.id, match_distance_m = near.distance_m, matched_at = now()
+  FROM portfolio_stores s
+ CROSS JOIN LATERAL (
+       SELECT d.id, ST_Distance(d.location, s.location) AS distance_m
+         FROM discovered_stores d
+        WHERE d.market_id = :marketId AND ST_DWithin(d.location, s.location, :radius)
+          AND (s.category_id IS NULL OR d.category_id = s.category_id)
+        ORDER BY d.location <-> s.location LIMIT 1) near
+ WHERE p.market_id = :marketId AND s.id = p.portfolio_store_id AND s.location IS NOT NULL;
+```
+
+**The dashboard's list**: discovered and placed portfolio stores as one shape (`UNION ALL`), each portfolio row carrying
+its pair, filtered by `layer = ANY(:layers) OR (:matched AND match_id IS NOT NULL)`, `category_slug = ANY(:categories)`
+and `name ILIKE :q`; totals counted apart and never filtered.
+
 ## Conventions
 
-- Layers: routes, services (only where there is a rule), queries with the SQL. Providers behind interfaces.
-- Functions and plain objects, no classes. A header comment on every file saying what it is for.
-- Every file with logic has a test beside it; screens are tested with React Testing Library on Jest, the API with
-  `node:test` against a real database.
-- Screens speak the user's words, never the system's; a control appears when its action is possible.
-- Packages over hand-rolled utilities.
+The rules the code follows, and what a change to it should look like. How this shape changes under load, with the
+alternatives weighed, is in [PRODUCTION.md](PRODUCTION.md).
 
-The high-level design, including how this shape changes at a million and ten million users, is in
-[design/HLD.md](design/HLD.md); the modules, contracts, sequences and SQL are in [design/LLD.md](design/LLD.md). The
-reasoning behind each scaling decision, with the alternatives weighed, is in [PRODUCTION.md](PRODUCTION.md).
+### Shape
+
+- **Layers.** In the API: routes validate shape and hand off; services hold the rules, and exist only where there is a
+  rule; queries hold the SQL and take the connection as their last argument, so a transaction can be passed in.
+- **Providers behind interfaces.** Anything external is a factory function behind an interface, with a fixture twin
+  that answers from a file. Tests and offline use run on the twins.
+- **Functions and plain objects.** No classes anywhere.
+- **Shared maths in `packages/shared`.** Anything the screen and the server must agree on lives there once.
+- **Packages over hand-rolled code.** Throttling, retries, parsing, debouncing: a well-known package each.
+
+### Files
+
+- A header comment on every file: what it is for, and the one non-obvious decision in it.
+- Every file with logic has a test. API tests use `node:test`; screens use Jest with React Testing Library; route tests
+  hit a real database.
+- Comments say why, not what. No task or phase numbers in code or in strings the user sees.
+
+### Words
+
+- Screens speak the user's words: "areas searched", "located from their address", never the system's.
+- A control appears when its action is possible; the reason it is missing is said in plain words nearby.
+- Errors carry a stable `code` for the client and a `message` for people.
+
+### Working
+
+- Write a migration, then run it. Ports other than the defaults go in the ignored `.env` only.
+- Run `npm run typecheck`, `npm run lint`, `npm test` and `npm run test:integration` before a commit; `npm run lint:fix`
+  applies ESLint's fixes and Prettier's formatting (160 columns, single quotes, trailing commas). Commit messages are one
+  plain line.
+- Add every "for now" decision to the [register](PRODUCTION.md#the-upgrade-register) with the trigger that would revisit it.

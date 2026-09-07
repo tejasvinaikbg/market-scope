@@ -57,6 +57,6 @@ and compiles the second into the server's rewrite, so neither can change at star
 
 ## Where each value goes when deployed
 
-The [deployment plan](production/deployment-plan.md) lists the values per stage. In short: `JOBS=off` on the API and a
+The [deployment plan](PRODUCTION.md#the-deployment-plan-by-stage) lists the values per stage. In short: `JOBS=off` on the API and a
 separate worker, `TRUST_PROXY=1` behind a balancer, `CORS_ORIGIN` and `NEXT_PUBLIC_API_URL` set to the real domains,
 `DB_POOL_MAX` raised behind a pooler, secrets in the platform's store rather than a file.
